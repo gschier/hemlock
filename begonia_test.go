@@ -4,8 +4,8 @@ import (
 	"testing"
 	"github.com/gschier/begonia"
 	"github.com/stretchr/testify/assert"
+	. "github.com/gschier/begonia/testutil"
 	"os"
-	"fmt"
 )
 
 func TestApplication_Call(t *testing.T) {
@@ -23,7 +23,7 @@ func TestContainer_Make(t *testing.T) {
 	app := NewTestApplication()
 
 	app.Bind(func(app *begonia.Application) (*CarService, error) {
-		return &CarService{noise: app.Env("honk")}, nil
+		return &CarService{Noise: app.Env("honk")}, nil
 	})
 
 	instance1 := app.Make(new(CarServiceInterface))
@@ -38,7 +38,7 @@ func TestContainer_MakeSingleton(t *testing.T) {
 	app := NewTestApplication()
 
 	app.Singleton(func(app *begonia.Application) (*CarService, error) {
-		return &CarService{noise: app.Env("honk")}, nil
+		return &CarService{Noise: app.Env("honk")}, nil
 	})
 
 	instance1 := app.Make(new(CarServiceInterface))
@@ -52,7 +52,7 @@ func TestContainer_MakeSingleton(t *testing.T) {
 func TestContainer_MakeInstance(t *testing.T) {
 	app := NewTestApplication()
 
-	instance := &CarService{noise: "Honk!"}
+	instance := &CarService{Noise: "Honk!"}
 	app.Instance(instance)
 
 	instance1 := app.Make(new(CarServiceInterface))
