@@ -8,49 +8,10 @@ import (
 	"fmt"
 )
 
-func configWithProviders(p ...begonia.Provider) *begonia.Config {
-	return &begonia.Config{
-		ApplicationConfig: &begonia.ApplicationConfig{Providers: p},
-	}
-}
-
-type CarServiceInterface interface {
-	Honk() string
-}
-
-type CarService struct {
-	noise string
-}
-
-func (cs *CarService) Honk() string {
-	if cs.noise == "" {
-		return "Honk!"
-	}
-
-	return cs.noise
-}
-
-type CarServiceProvider struct {
-	noise string
-}
-
-func (csp *CarServiceProvider) Register(ioc *begonia.Container) {
-	ioc.Singleton(func(app *begonia.Application) (*CarService, error) {
-		return &CarService{noise: app.Env("honk")}, nil
-	})
-}
-
-func (csp *CarServiceProvider) Boot(app *begonia.Application) {
-	carService := app.Make(new(CarServiceInterface)).(*CarService)
-	fmt.Printf("HELLO? %v\n", carService.Honk())
-}
-
 func TestApplication_Call(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
 
-	app := begonia.NewApplication(configWithProviders(
-		new(CarServiceProvider),
-	))
+	app := NewTestApplication(new(CarServiceProvider))
 
 	app.Call(func(c CarServiceInterface) {
 		assert.IsType(t, &CarService{}, c, "Should be a car type")
@@ -59,7 +20,7 @@ func TestApplication_Call(t *testing.T) {
 }
 
 func TestContainer_Make(t *testing.T) {
-	app := begonia.NewApplication(configWithProviders())
+	app := NewTestApplication()
 
 	app.Bind(func(app *begonia.Application) (*CarService, error) {
 		return &CarService{noise: app.Env("honk")}, nil
@@ -74,7 +35,7 @@ func TestContainer_Make(t *testing.T) {
 }
 
 func TestContainer_MakeSingleton(t *testing.T) {
-	app := begonia.NewApplication(configWithProviders())
+	app := NewTestApplication()
 
 	app.Singleton(func(app *begonia.Application) (*CarService, error) {
 		return &CarService{noise: app.Env("honk")}, nil
@@ -89,7 +50,7 @@ func TestContainer_MakeSingleton(t *testing.T) {
 }
 
 func TestContainer_MakeInstance(t *testing.T) {
-	app := begonia.NewApplication(configWithProviders())
+	app := NewTestApplication()
 
 	instance := &CarService{noise: "Honk!"}
 	app.Instance(instance)
