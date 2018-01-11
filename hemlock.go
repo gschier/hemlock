@@ -22,12 +22,12 @@ func NewApplication(config *Config) *Application {
 	}
 
 	// Add providers from config
-	for _, p := range app.Config.Application.Providers {
+	for _, p := range app.Config.Providers {
 		p.Register(app.container)
 	}
 
 	// Boot all providers
-	for _, p := range app.Config.Application.Providers {
+	for _, p := range app.Config.Providers {
 		p.Boot(app)
 	}
 
@@ -46,12 +46,12 @@ func (a *Application) Instance(v interface{}) {
 	a.container.Instance(v)
 }
 
-func (a *Application) ResolveInto(fn interface{}) {
-	a.container.Call(fn, a)
+func (a *Application) ResolveInto(fn interface{}) []interface{} {
+	return a.container.Call(fn, a)
 }
 
-func (a *Application) With(fn interface{}) {
-	a.container.Call(fn, a)
+func (a *Application) With(fn interface{}) []interface{} {
+	return a.container.Call(fn, a)
 }
 
 func (a *Application) Make(i interface{}) interface{} {
@@ -212,7 +212,7 @@ func (c *Container) Instance(i interface{}) {
 	c.registered[w.instanceType] = w
 }
 
-func (c *Container) Call(fn interface{}, app *Application) {
+func (c *Container) Call(fn interface{}, app *Application) []interface{} {
 	fnType := reflect.TypeOf(fn)
 	fnValue := reflect.ValueOf(fn)
 	if fnType.Kind() != reflect.Func {
@@ -239,7 +239,13 @@ func (c *Container) Call(fn interface{}, app *Application) {
 		args[i] = reflect.ValueOf(sw.Make(app))
 	}
 
-	fnValue.Call(args)
+	returnValues := fnValue.Call(args)
+	returnInstances := make([]interface{}, len(returnValues))
+	for i, rv := range returnValues {
+		returnInstances[i] = rv.Interface()
+	}
+
+	return returnInstances
 }
 
 func (c *Container) findServiceWrapperByInterface(iType reflect.Type) *ServiceWrapper {

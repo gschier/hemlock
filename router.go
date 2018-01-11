@@ -1,24 +1,80 @@
 package hemlock
 
-import "io"
+import (
+	"fmt"
+	"github.com/go-chi/chi"
+	"github.com/gschier/hemlock/interfaces"
+	"net/http"
+)
 
-type Router interface {
-	Redirect(uri, to string, code int)
-	Get(uri string, callback Callback)
-	Post(uri string, callback Callback)
-	Put(uri string, callback Callback)
-	Patch(uri string, callback Callback)
-	Delete(uri string, callback Callback)
-	Options(uri string, callback Callback)
+type Router struct {
+	app  *Application
+	root chi.Router
+}
+
+func NewRouter(app *Application) interfaces.Router {
+	return &Router{root: chi.NewRouter(), app: app}
+}
+
+func (r *Router) Redirect(uri, to string, code int) {
+	r.root.HandleFunc(uri, func(res http.ResponseWriter, req *http.Request) {
+		http.Redirect(res, req, to, code)
+	})
+}
+
+func (r *Router) Get(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodGet, uri, callback)
+}
+
+func (r *Router) Post(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodPost, uri, callback)
+}
+
+func (r *Router) Put(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodPut, uri, callback)
+}
+
+func (r *Router) Patch(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodPatch, uri, callback)
+}
+
+func (r *Router) Delete(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodDelete, uri, callback)
+}
+
+func (r *Router) Options(uri string, callback interfaces.Callback) {
+	r.addRoute(http.MethodOptions, uri, callback)
+}
+
+// Handler returns the HTTP handler
+func (r *Router) Handler() http.Handler {
+	return r.root
+}
+
+func (r *Router) addRoute(method string, uri string, callback interfaces.Callback) {
+	fmt.Printf("ADDED ROUTE %v %v\n", method, uri)
+	r.root.MethodFunc(method, uri, func(w http.ResponseWriter, req *http.Request) {
+		r.app.Instance(w)
+		r.app.Instance(req)
+		r.app.Instance(NewResponse(w))
+
+		results := r.app.ResolveInto(callback)
+		if len(results) != 1 {
+			panic("Route did not return a value. Got "+string(len(results)))
+		}
+
+		view, ok := results[0].(*View)
+		if !ok {
+			panic("Route did not return View instance")
+		}
+
+		w.WriteHeader(view.Status)
+		w.Write(view.Bytes)
+	})
 }
 
 // Should be a function
 type Callback interface{}
-
-type View interface {
-	Status() int
-	Serialize() []byte
-}
 
 type Request struct {
 }
@@ -41,23 +97,4 @@ func (req *Request) Cookie(name string) string {
 // Cookie grabs file name
 func (req *Request) File(name string) []byte {
 	panic("Implement me")
-}
-
-type Response struct {
-	W io.Writer
-}
-
-func (res *Response) Cookie(name, value string) *Response {
-	panic("Implement me")
-	return res
-}
-
-func (res *Response) Status(status int) *Response {
-	panic("Implement me")
-	return res
-}
-
-func (res *Response) View(data ...interface{}) View {
-	panic("Implement me")
-	return nil
 }

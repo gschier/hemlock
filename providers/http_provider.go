@@ -19,7 +19,7 @@ func (p *HttpProvider) Boot(app *hemlock.Application) {
 	app.Resolve(&router)
 
 	srv := &http.Server{
-		Handler: router,
+		Handler: router.Handler(),
 		Addr: app.Config.Server.Host+":"+app.Config.Server.Port,
 	}
 

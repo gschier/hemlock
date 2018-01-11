@@ -1,29 +1,16 @@
 package hemlock
 
 type Config struct {
-	Application *ApplicationConfig
-	Database    *DatabaseConfig
-	Server      *ServerConfig
-}
-
-type ApplicationConfig struct {
-	Env            string
-	Debug          bool
-	URL            string
-	Timezone       string
-	Locale         string
-	Languages      []string
-	FallbackLocale string
-	Key            string
-	Cipher         string
-	Log            string
-	Providers      Providers
-	Aliases        map[string]interface{}
+	Env       string
+	URL       string
+	Providers Providers
+	Database  *DatabaseConfig
+	Server    *ServerConfig
 }
 
 type ServerConfig struct {
-	Host    string
-	Port    string
+	Host string
+	Port string
 }
 
 type DatabaseConfig struct {
