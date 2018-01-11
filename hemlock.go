@@ -1,9 +1,9 @@
 package hemlock
 
 import (
+	"log"
 	"os"
 	"reflect"
-	"log"
 )
 
 // ~~~~~~~~~~~ //
@@ -13,18 +13,18 @@ import (
 type Application struct {
 	Router    Router
 	Config    *Config
-	Container *Container
+	container *Container
 }
 
 func NewApplication(config *Config) *Application {
 	app := &Application{
 		Config:    config,
-		Container: NewContainer(),
+		container: NewContainer(),
 	}
 
 	// Add providers from config
 	for _, p := range app.Config.Providers {
-		p.Register(app.Container)
+		p.Register(app.container)
 	}
 
 	// Boot all providers
@@ -36,19 +36,23 @@ func NewApplication(config *Config) *Application {
 }
 
 func (a *Application) Bind(fn ServiceConstructor) {
-	a.Container.Bind(fn)
+	a.container.Bind(fn)
 }
 
 func (a *Application) Singleton(fn ServiceConstructor) {
-	a.Container.Singleton(fn)
+	a.container.Singleton(fn)
 }
 
 func (a *Application) Instance(v interface{}) {
-	a.Container.Instance(v)
+	a.container.Instance(v)
 }
 
 func (a *Application) Call(fn interface{}) {
-	a.Container.Call(fn, a)
+	a.container.Call(fn, a)
+}
+
+func (a *Application) With(fn interface{}) {
+	a.container.Call(fn, a)
 }
 
 func (a *Application) Make(i interface{}) interface{} {
@@ -59,11 +63,26 @@ func (a *Application) Make(i interface{}) interface{} {
 
 	var sw *ServiceWrapper
 	if iType.Elem().Kind() == reflect.Interface {
-		sw = a.Container.findServiceWrapperByInterface(iType.Elem())
+		sw = a.container.findServiceWrapperByInterface(iType.Elem())
 	} else {
-		sw = a.Container.findServiceWrapperByPtr(iType)
+		sw = a.container.findServiceWrapperByPtr(iType)
 	}
+
 	return sw.Make(a)
+}
+
+func (a *Application) MakeInto(v interface{}) {
+	vValue := reflect.ValueOf(v)
+	vType := reflect.TypeOf(v)
+
+	instance := a.Make(v)
+	instanceValue := reflect.ValueOf(instance)
+
+	if vType.Elem().Kind() == reflect.Interface {
+		vValue.Elem().Set(instanceValue)
+	} else {
+		vValue.Elem().Set(instanceValue.Elem())
+	}
 }
 
 func (a *Application) Env(name string) string {
@@ -87,7 +106,9 @@ type ServiceConstructor interface{}
 func newServiceWrapper(fn ServiceConstructor, singleton bool) *ServiceWrapper {
 	fnType := reflect.TypeOf(fn)
 	instanceType := fnType.Out(0)
-	if instanceType.Kind() != reflect.Ptr {
+
+	isInterface := instanceType.Kind() == reflect.Interface
+	if !isInterface && instanceType.Kind() != reflect.Ptr {
 		panic("Must be pointer")
 	}
 
@@ -259,10 +280,15 @@ func (c *Container) findServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrappe
 
 	for _, sw := range c.registered {
 		//fmt.Printf("Checking Ptr %v =? %v\n", ptrType, sw.instanceType)
-		if !sw.instanceType.AssignableTo(ptrType) {
-			continue
+		// TODO: Find best match interface
+		if sw.instanceType.Kind() == reflect.Interface && ptrType.Implements(sw.instanceType){
+			return sw
 		}
-		return sw
+
+		if sw.instanceType.AssignableTo(ptrType) {
+			return sw
+		}
+
 	}
 
 	log.Panicf("Type not found for arg: %v", ptrType)

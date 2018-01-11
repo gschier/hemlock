@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"github.com/gschier/hemlock"
-	"fmt"
 )
 
 func NewTestApplication(p ...hemlock.Provider) *hemlock.Application {
@@ -38,6 +37,5 @@ func (csp *CarServiceProvider) Register(ioc *hemlock.Container) {
 }
 
 func (csp *CarServiceProvider) Boot(app *hemlock.Application) {
-	carService := app.Make(new(CarServiceInterface)).(*CarService)
-	fmt.Printf("HELLO? %v\n", carService.Honk())
+	// Nothing yet
 }
