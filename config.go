@@ -1,8 +1,9 @@
 package hemlock
 
 type Config struct {
-	*ApplicationConfig
-	*DatabaseConfig
+	Application *ApplicationConfig
+	Database    *DatabaseConfig
+	Server      *ServerConfig
 }
 
 type ApplicationConfig struct {
@@ -18,6 +19,11 @@ type ApplicationConfig struct {
 	Log            string
 	Providers      Providers
 	Aliases        map[string]interface{}
+}
+
+type ServerConfig struct {
+	Host    string
+	Port    string
 }
 
 type DatabaseConfig struct {

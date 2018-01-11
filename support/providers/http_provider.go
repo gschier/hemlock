@@ -1,24 +1,28 @@
 package providers
 
 import (
+	"fmt"
 	"github.com/gschier/hemlock"
+	"github.com/gschier/hemlock/facades"
+	"log"
 	"net/http"
 )
 
 type HttpProvider struct{}
 
 func (p *HttpProvider) Register(c *hemlock.Container) {
-	//p.registerServer(c)
+	// Nothing yet
 }
 
 func (p *HttpProvider) Boot(app *hemlock.Application) {
-	//srv := &http.Server{
-	//
-	//}
-}
+	var router facades.Router
+	app.MakeInto(&router)
 
-func (p *HttpProvider) registerServer(c *hemlock.Container) {
-	//c.Singleton(func(app *hemlock.Application) (facades.Router, error) {
-	//	return chi.NewRouter(), nil
-	//})
+	srv := &http.Server{
+		Handler: router,
+		Addr: app.Config.Server.Host+":"+app.Config.Server.Port,
+	}
+
+	fmt.Printf("Starting server at %v\n", srv.Addr)
+	log.Fatal(srv.ListenAndServe())
 }

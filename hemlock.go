@@ -11,7 +11,6 @@ import (
 // ~~~~~~~~~~~ //
 
 type Application struct {
-	Router    Router
 	Config    *Config
 	container *Container
 }
@@ -23,12 +22,12 @@ func NewApplication(config *Config) *Application {
 	}
 
 	// Add providers from config
-	for _, p := range app.Config.Providers {
+	for _, p := range app.Config.Application.Providers {
 		p.Register(app.container)
 	}
 
 	// Boot all providers
-	for _, p := range app.Config.Providers {
+	for _, p := range app.Config.Application.Providers {
 		p.Boot(app)
 	}
 
