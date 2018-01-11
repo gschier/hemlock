@@ -1,4 +1,4 @@
-package facades
+package interfaces
 
 type Server interface {
 }

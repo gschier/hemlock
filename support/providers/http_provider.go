@@ -3,7 +3,7 @@ package providers
 import (
 	"fmt"
 	"github.com/gschier/hemlock"
-	"github.com/gschier/hemlock/facades"
+	"github.com/gschier/hemlock/interfaces"
 	"log"
 	"net/http"
 )
@@ -15,7 +15,7 @@ func (p *HttpProvider) Register(c *hemlock.Container) {
 }
 
 func (p *HttpProvider) Boot(app *hemlock.Application) {
-	var router facades.Router
+	var router interfaces.Router
 	app.Resolve(&router)
 
 	srv := &http.Server{

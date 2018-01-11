@@ -3,7 +3,7 @@ package providers
 import (
 	"github.com/go-chi/chi"
 	"github.com/gschier/hemlock"
-	"github.com/gschier/hemlock/facades"
+	"github.com/gschier/hemlock/interfaces"
 )
 
 type RouteServiceProvider struct{}
@@ -17,7 +17,7 @@ func (p *RouteServiceProvider) Boot(*hemlock.Application) {
 }
 
 func (p *RouteServiceProvider) registerRouter(c *hemlock.Container) {
-	c.Singleton(func(app *hemlock.Application) (facades.Router, error) {
+	c.Singleton(func(app *hemlock.Application) (interfaces.Router, error) {
 		return chi.NewRouter(), nil
 	})
 }

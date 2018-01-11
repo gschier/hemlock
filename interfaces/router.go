@@ -1,4 +1,4 @@
-package facades
+package interfaces
 
 import "github.com/go-chi/chi"
 
