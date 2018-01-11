@@ -12,7 +12,7 @@ func TestApplication_Call(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
 	app := NewTestApplication(new(CarServiceProvider))
 
-	app.Call(func(c CarServiceInterface) {
+	app.ResolveInto(func(c CarServiceInterface) {
 		assert.IsType(t, &CarService{}, c, "Should be a car type")
 		assert.Equal(t, c.Honk(), "Env Honk!", "Should get honk sound from env")
 	})
@@ -50,7 +50,7 @@ func TestContainer_MakeInterface(t *testing.T) {
 	assert.True(t, instance1 != instance3, "Should be new instance")
 }
 
-func TestContainer_MakeInto(t *testing.T) {
+func TestContainer_Resolve(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
 	app := NewTestApplication()
 
@@ -61,8 +61,8 @@ func TestContainer_MakeInto(t *testing.T) {
 	var instance1 CarService
 	var instance2 CarServiceInterface
 
-	app.MakeInto(&instance1)
-	app.MakeInto(&instance2)
+	app.Resolve(&instance1)
+	app.Resolve(&instance2)
 
 	assert.Equal(t, "Env Honk!", instance1.Honk(), "Value should honk")
 	assert.Equal(t, "Env Honk!", instance2.Honk(), "Interface should honk")

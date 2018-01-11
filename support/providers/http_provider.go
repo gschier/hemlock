@@ -16,7 +16,7 @@ func (p *HttpProvider) Register(c *hemlock.Container) {
 
 func (p *HttpProvider) Boot(app *hemlock.Application) {
 	var router facades.Router
-	app.MakeInto(&router)
+	app.Resolve(&router)
 
 	srv := &http.Server{
 		Handler: router,

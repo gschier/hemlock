@@ -46,7 +46,7 @@ func (a *Application) Instance(v interface{}) {
 	a.container.Instance(v)
 }
 
-func (a *Application) Call(fn interface{}) {
+func (a *Application) ResolveInto(fn interface{}) {
 	a.container.Call(fn, a)
 }
 
@@ -70,7 +70,7 @@ func (a *Application) Make(i interface{}) interface{} {
 	return sw.Make(a)
 }
 
-func (a *Application) MakeInto(v interface{}) {
+func (a *Application) Resolve(v interface{}) {
 	vValue := reflect.ValueOf(v)
 	vType := reflect.TypeOf(v)
 

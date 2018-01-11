@@ -6,7 +6,7 @@ import (
 
 func NewTestApplication(p ...hemlock.Provider) *hemlock.Application {
 	return hemlock.NewApplication(&hemlock.Config{
-		ApplicationConfig: &hemlock.ApplicationConfig{Providers: p},
+		Application: &hemlock.ApplicationConfig{Providers: p},
 	})
 }
 
