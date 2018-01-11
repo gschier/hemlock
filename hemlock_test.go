@@ -1,11 +1,11 @@
-package begonia_test
+package hemlock_test
 
 import (
 	"testing"
-	"github.com/gschier/begonia"
 	"github.com/stretchr/testify/assert"
-	. "github.com/gschier/begonia/testutil"
+	. "github.com/gschier/hemlock/testutil"
 	"os"
+	"github.com/gschier/hemlock"
 )
 
 func TestApplication_Call(t *testing.T) {
@@ -22,7 +22,7 @@ func TestApplication_Call(t *testing.T) {
 func TestContainer_Make(t *testing.T) {
 	app := NewTestApplication()
 
-	app.Bind(func(app *begonia.Application) (*CarService, error) {
+	app.Bind(func(app *hemlock.Application) (*CarService, error) {
 		return &CarService{Noise: app.Env("honk")}, nil
 	})
 
@@ -37,7 +37,7 @@ func TestContainer_Make(t *testing.T) {
 func TestContainer_MakeSingleton(t *testing.T) {
 	app := NewTestApplication()
 
-	app.Singleton(func(app *begonia.Application) (*CarService, error) {
+	app.Singleton(func(app *hemlock.Application) (*CarService, error) {
 		return &CarService{Noise: app.Env("honk")}, nil
 	})
 

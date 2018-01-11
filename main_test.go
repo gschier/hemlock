@@ -1,4 +1,4 @@
-package begonia_test
+package hemlock_test
 
 import (
 	"testing"

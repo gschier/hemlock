@@ -1,13 +1,13 @@
 package testutil
 
 import (
-	"github.com/gschier/begonia"
+	"github.com/gschier/hemlock"
 	"fmt"
 )
 
-func NewTestApplication(p ...begonia.Provider) *begonia.Application {
-	return begonia.NewApplication(&begonia.Config{
-		ApplicationConfig: &begonia.ApplicationConfig{Providers: p},
+func NewTestApplication(p ...hemlock.Provider) *hemlock.Application {
+	return hemlock.NewApplication(&hemlock.Config{
+		ApplicationConfig: &hemlock.ApplicationConfig{Providers: p},
 	})
 }
 
@@ -31,13 +31,13 @@ type CarServiceProvider struct {
 	noise string
 }
 
-func (csp *CarServiceProvider) Register(ioc *begonia.Container) {
-	ioc.Singleton(func(app *begonia.Application) (*CarService, error) {
+func (csp *CarServiceProvider) Register(ioc *hemlock.Container) {
+	ioc.Singleton(func(app *hemlock.Application) (*CarService, error) {
 		return &CarService{Noise: app.Env("honk")}, nil
 	})
 }
 
-func (csp *CarServiceProvider) Boot(app *begonia.Application) {
+func (csp *CarServiceProvider) Boot(app *hemlock.Application) {
 	carService := app.Make(new(CarServiceInterface)).(*CarService)
 	fmt.Printf("HELLO? %v\n", carService.Honk())
 }

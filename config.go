@@ -1,4 +1,4 @@
-package begonia
+package hemlock
 
 type Config struct {
 	*ApplicationConfig
