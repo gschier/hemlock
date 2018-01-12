@@ -10,7 +10,7 @@ import (
 
 type HttpProvider struct{}
 
-func (p *HttpProvider) Register(c *hemlock.Container) {
+func (p *HttpProvider) Register(c hemlock.Container) {
 	// Nothing yet
 }
 

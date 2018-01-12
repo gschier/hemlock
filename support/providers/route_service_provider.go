@@ -7,7 +7,7 @@ import (
 
 type RouteServiceProvider struct{}
 
-func (p *RouteServiceProvider) Register(c *hemlock.Container) {
+func (p *RouteServiceProvider) Register(c hemlock.Container) {
 	p.registerRouter(c)
 }
 
@@ -15,7 +15,7 @@ func (p *RouteServiceProvider) Boot(*hemlock.Application) {
 	// Nothing
 }
 
-func (p *RouteServiceProvider) registerRouter(c *hemlock.Container) {
+func (p *RouteServiceProvider) registerRouter(c hemlock.Container) {
 	c.Singleton(func(app *hemlock.Application) (interfaces.Router, error) {
 		return hemlock.NewRouter(app), nil
 	})

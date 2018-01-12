@@ -30,12 +30,24 @@ type CarServiceProvider struct {
 	noise string
 }
 
-func (csp *CarServiceProvider) Register(ioc *hemlock.Container) {
+func (csp *CarServiceProvider) Register(ioc hemlock.Container) {
 	ioc.Singleton(func(app *hemlock.Application) (*CarService, error) {
 		return &CarService{Noise: app.Env("honk")}, nil
 	})
 }
 
 func (csp *CarServiceProvider) Boot(app *hemlock.Application) {
+	// Nothing yet
+}
+
+type StringServiceProvider struct{}
+
+func (ssp *StringServiceProvider) Register(ioc hemlock.Container) {
+	ioc.Singleton(func(app *hemlock.Application) (string, error) {
+		return "Hello!", nil
+	})
+}
+
+func (ssp *StringServiceProvider) Boot(app *hemlock.Application) {
 	// Nothing yet
 }

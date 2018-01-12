@@ -10,11 +10,12 @@ import (
 
 func TestApplication_Call(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
-	app := NewTestApplication(new(CarServiceProvider))
+	app := NewTestApplication(new(CarServiceProvider), new(StringServiceProvider))
 
-	app.ResolveInto(func(c CarServiceInterface) {
+	app.ResolveInto(func(c CarServiceInterface, s string) {
 		assert.IsType(t, &CarService{}, c, "Should be a car type")
 		assert.Equal(t, c.Honk(), "Env Honk!", "Should get honk sound from env")
+		assert.Equal(t, s, "Hello!", "Should get string")
 	})
 }
 

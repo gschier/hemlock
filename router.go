@@ -58,7 +58,13 @@ func (r *Router) addRoute(method string, uri string, callback interfaces.Callbac
 		r.app.Instance(req)
 		r.app.Instance(NewResponse(w))
 
-		results := r.app.ResolveInto(callback)
+		c := chi.RouteContext(req.Context())
+		extraArgs := make([]interface{}, len(c.URLParams.Values))
+		for i, v := range c.URLParams.Values {
+			extraArgs[i] = v
+		}
+
+		results := r.app.ResolveInto(callback, extraArgs...)
 		if len(results) != 1 {
 			panic("Route did not return a value. Got "+string(len(results)))
 		}
