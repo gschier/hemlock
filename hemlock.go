@@ -1,6 +1,7 @@
 package hemlock
 
 import (
+	"github.com/gschier/hemlock/internal"
 	"log"
 	"os"
 	"reflect"
@@ -17,9 +18,13 @@ type Application struct {
 
 func NewApplication(config *Config) *Application {
 	app := &Application{
-		Config:    config,
-		container: NewContainer(),
+		Config: config,
 	}
+
+	// Ensure all service constructors take in *Application as an
+	// argument
+	serviceConstructorArgs := []interface{}{app}
+	app.container = NewContainer(serviceConstructorArgs)
 
 	// Add providers from config
 	for _, p := range app.Config.Providers {
@@ -56,9 +61,7 @@ func (a *Application) With(fn interface{}) []interface{} {
 
 func (a *Application) Make(i interface{}) interface{} {
 	iType := reflect.TypeOf(i)
-	if iType.Kind() != reflect.Ptr {
-		panic("Cannot make non-pointer")
-	}
+	internal.AssertPtrType(iType, "Cannot make non-pointer")
 
 	var sw *ServiceWrapper
 	if iType.Elem().Kind() == reflect.Interface {
@@ -67,12 +70,11 @@ func (a *Application) Make(i interface{}) interface{} {
 		sw = a.container.findServiceWrapperByPtr(iType)
 	}
 
-	return sw.Make(a)
+	return sw.Make()
 }
 
 func (a *Application) Resolve(v interface{}) {
-	vValue := reflect.ValueOf(v)
-	vType := reflect.TypeOf(v)
+	vType, vValue := internal.TypeAndValue(v)
 
 	instance := a.Make(v)
 	instanceValue := reflect.ValueOf(instance)
@@ -93,116 +95,98 @@ func (a *Application) EnvOr(name, fallback string) string {
 }
 
 type ServiceWrapper struct {
-	singleton      bool
-	cachedInstance interface{}
-	constructor    ServiceConstructor
-	instanceType   reflect.Type
+	singleton       bool
+	cachedInstance  interface{}
+	constructor     ServiceConstructor
+	constructorArgs []interface{}
+	instanceType    reflect.Type
 }
 
 //type ServiceConstructor func(*Application) (interface{}, error)
 type ServiceConstructor interface{}
 
-func newServiceWrapper(fn ServiceConstructor, singleton bool) *ServiceWrapper {
+func newServiceWrapper(fn ServiceConstructor, singleton bool, constructorArgs []interface{}) *ServiceWrapper {
 	fnType := reflect.TypeOf(fn)
 	instanceType := fnType.Out(0)
 
-	isInterface := instanceType.Kind() == reflect.Interface
-	if !isInterface && instanceType.Kind() != reflect.Ptr {
-		panic("Must be pointer")
-	}
+	// Make sure func has correct arguments (*Application)
+	inTypes := internal.Types(constructorArgs)
+	internal.AssertInTypes(fnType, inTypes, "Func arg mismatch")
+
+	// Make sure func has correct return values (value, error)
+	outTypes := []reflect.Type{internal.AnyType, internal.ErrType}
+	internal.AssertOutTypes(fnType, outTypes, "Func return mismatch")
 
 	// Add the dependency to the graph
 	return &ServiceWrapper{
-		singleton:      singleton,
-		cachedInstance: nil,
-		constructor:    fn,
-		instanceType:   instanceType,
+		singleton:       singleton,
+		cachedInstance:  nil,
+		constructor:     fn,
+		constructorArgs: constructorArgs,
+		instanceType:    instanceType,
 	}
 }
 
 func newServiceWrapperInstance(instance interface{}, singleton bool) *ServiceWrapper {
 	instanceType := reflect.TypeOf(instance)
-	if instanceType.Kind() != reflect.Ptr {
-		panic("Must be pointer")
-	}
+	internal.AssertPtrType(instanceType, "Cannot wrap non-pointer")
 
 	// Add the dependency to the graph
 	return &ServiceWrapper{
-		singleton:      singleton,
-		cachedInstance: instance,
-		constructor:    nil,
-		instanceType:   instanceType,
+		singleton:       singleton,
+		cachedInstance:  instance,
+		constructor:     nil,
+		constructorArgs: nil,
+		instanceType:    instanceType,
 	}
 }
 
-func (sw *ServiceWrapper) Make(app *Application) interface{} {
+func (sw *ServiceWrapper) Make() interface{} {
+	// Return cached instance if it's a singleton
 	if sw.singleton && sw.cachedInstance != nil {
 		return sw.cachedInstance
 	}
 
-	constructorType := reflect.TypeOf(sw.constructor)
-	if constructorType.Kind() != reflect.Func {
-		panic("Should be func")
+	// Create a new instance by calling the constructor
+	outValues := internal.CallFunc(
+		reflect.ValueOf(sw.constructor),
+		internal.Values(sw.constructorArgs)...,
+	)
+
+	err := outValues[1].Interface()
+	if err != nil {
+		log.Panicf("Failed to initialize service err=%v", err)
 	}
 
-	numIn := constructorType.NumIn()
-	if numIn != 1 {
-		panic("Fn must take Application as argument")
-	}
+	instance := outValues[0].Interface()
 
-	inType := constructorType.In(0)
-	if inType.Kind() != reflect.Ptr {
-		panic("First arg must be pointer to Application")
-	}
-
-	if inType.Elem() != reflect.TypeOf(Application{}) {
-		panic("First arg must be Application")
-	}
-
-	numOut := constructorType.NumOut()
-	if numOut != 2 {
-		panic("Fn must return a value and error")
-	}
-
-	out2Type := constructorType.Out(1)
-	errType := reflect.TypeOf((*error)(nil)).Elem()
-	if !out2Type.Implements(errType) {
-		log.Panicf("Fn second return value must be error type. Got %v != %v\n", out2Type, errType)
-	}
-
-	constructorValue := reflect.ValueOf(sw.constructor)
-	iocValue := reflect.ValueOf(app)
-	returns := constructorValue.Call([]reflect.Value{iocValue})
-	instance := returns[0].Interface()
-	if !returns[1].IsNil() {
-		err := returns[1].Interface().(error)
-		panic("Failed to initialize service err=" + err.Error())
-	}
-
+	// Cache it for next time
 	sw.cachedInstance = instance
 
 	return instance
 }
 
 type Container struct {
-	registered map[reflect.Type]*ServiceWrapper
+	registered             map[reflect.Type]*ServiceWrapper
+	serviceConstructorArgs []interface{}
 }
 
-func NewContainer() *Container {
+func NewContainer(serviceConstructorArgs []interface{}) *Container {
 	return &Container{
-		registered: make(map[reflect.Type]*ServiceWrapper),
+		registered:             make(map[reflect.Type]*ServiceWrapper),
+		serviceConstructorArgs: serviceConstructorArgs,
 	}
 }
 
 // Bind binds the type of v as a dependency
 func (c *Container) Bind(fn ServiceConstructor) {
-	w := newServiceWrapper(fn, false)
+	w := newServiceWrapper(fn, false, c.serviceConstructorArgs)
 	c.registered[w.instanceType] = w
 }
 
 // Singleton binds the type of v as a dependency. Will only get instantiated once
 func (c *Container) Singleton(fn ServiceConstructor) {
-	w := newServiceWrapper(fn, true)
+	w := newServiceWrapper(fn, true, c.serviceConstructorArgs)
 	c.registered[w.instanceType] = w
 }
 
@@ -236,7 +220,7 @@ func (c *Container) Call(fn interface{}, app *Application) []interface{} {
 			panic("Function argument was not pointer nor interface")
 		}
 
-		args[i] = reflect.ValueOf(sw.Make(app))
+		args[i] = reflect.ValueOf(sw.Make())
 	}
 
 	returnValues := fnValue.Call(args)
@@ -286,7 +270,7 @@ func (c *Container) findServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrappe
 	for _, sw := range c.registered {
 		//fmt.Printf("Checking Ptr %v =? %v\n", ptrType, sw.instanceType)
 		// TODO: Find best match interface
-		if sw.instanceType.Kind() == reflect.Interface && ptrType.Implements(sw.instanceType){
+		if sw.instanceType.Kind() == reflect.Interface && ptrType.Implements(sw.instanceType) {
 			return sw
 		}
 

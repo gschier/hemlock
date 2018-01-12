@@ -34,22 +34,6 @@ func TestContainer_Make(t *testing.T) {
 	assert.True(t, instance1 != instance3, "Should be new instance")
 }
 
-func TestContainer_MakeInterface(t *testing.T) {
-	os.Setenv("honk", "Env Honk!")
-	app := NewTestApplication()
-
-	app.Bind(func(app *hemlock.Application) (CarServiceInterface, error) {
-		return &CarService{Noise: app.Env("honk")}, nil
-	})
-
-	instance1 := app.Make(new(CarServiceInterface))
-	instance2 := app.Make(new(CarServiceInterface))
-	instance3 := app.Make(new(CarService))
-
-	assert.True(t, instance1 != instance2, "Should be new instance")
-	assert.True(t, instance1 != instance3, "Should be new instance")
-}
-
 func TestContainer_Resolve(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
 	app := NewTestApplication()
