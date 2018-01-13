@@ -10,12 +10,8 @@ type ContextProvider struct{}
 
 func (p *ContextProvider) Register(c hemlock.Container) {
 	c.Bind(func (app *hemlock.Application) (context.Context, error) {
-		var r *http.Request = nil
-		app.Resolve(r)
-		if r == nil {
-			panic("BACKGROUND")
-			return context.Background(), nil
-		}
+		var r http.Request
+		app.Resolve(&r)
 		return r.Context(), nil
 	})
 }

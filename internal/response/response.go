@@ -1,4 +1,4 @@
-package hemlock
+package response
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type Response struct {
 	cookies map[string]string
 }
 
-func NewResponse(w http.ResponseWriter) interfaces.Response {
+func New(w http.ResponseWriter) interfaces.Response {
 	return &Response{w: w}
 }
 
@@ -29,6 +29,11 @@ func (res *Response) Status(status int) interfaces.Response {
 
 func (res *Response) Data(data interface{}) interfaces.Response {
 	res.data = data
+	return res
+}
+
+func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response {
+	res.data = fmt.Sprintf(format, a...)
 	return res
 }
 

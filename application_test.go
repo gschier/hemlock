@@ -51,6 +51,11 @@ func TestContainer_Resolve(t *testing.T) {
 
 	assert.Equal(t, "Env Honk!", instance1.Honk(), "Value should honk")
 	assert.Equal(t, "Env Honk!", instance2.Honk(), "Interface should honk")
+
+	// Hopefully make this one work one day. I think it might be impossible?
+	//var instance3 *CarService
+	//app.Resolve(instance3)
+	//assert.Equal(t, "Env Honk!", instance3.Honk(), "Zero-value pointers should work")
 }
 
 func TestContainer_MakeSingleton(t *testing.T) {

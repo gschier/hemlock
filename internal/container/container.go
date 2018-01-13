@@ -1,4 +1,4 @@
-package internal
+package container
 
 import (
 	"log"
@@ -6,20 +6,20 @@ import (
 )
 
 type Container struct {
-	registered             map[reflect.Type]*ServiceWrapper
+	registered             map[reflect.Type]*serviceWrapper
 	serviceConstructorArgs []interface{}
 }
 
-func NewContainer(serviceConstructorArgs []interface{}) *Container {
+func New(serviceConstructorArgs []interface{}) *Container {
 	return &Container{
-		registered:             make(map[reflect.Type]*ServiceWrapper),
+		registered:             make(map[reflect.Type]*serviceWrapper),
 		serviceConstructorArgs: serviceConstructorArgs,
 	}
 }
 
 // Bind binds the type of v as a dependency
 func (c *Container) Clone() *Container {
-	newRegistered := make(map[reflect.Type]*ServiceWrapper, len(c.registered))
+	newRegistered := make(map[reflect.Type]*serviceWrapper, len(c.registered))
 	for t, sw := range c.registered {
 		newRegistered[t] = sw
 	}
@@ -48,6 +48,37 @@ func (c *Container) Instance(i interface{}) {
 	c.registered[w.instanceType] = w
 }
 
+func (c *Container) Make(i interface{}) interface{} {
+	iType := reflect.TypeOf(i)
+	if iType.Kind() != reflect.Ptr {
+		panic("Cannot make non-pointer")
+	}
+
+	var sw *serviceWrapper
+	if iType.Elem().Kind() == reflect.Interface {
+		sw = c.findServiceWrapperByInterface(iType.Elem())
+	} else {
+		sw = c.findServiceWrapperByPtr(iType)
+	}
+
+	return sw.Make()
+}
+
+func (c *Container) Resolve(v interface{}) {
+	vType, vValue := getTypeAndValue(v)
+
+	instance := c.Make(v)
+	instanceValue := reflect.ValueOf(instance)
+
+	if vType.Elem().Kind() == reflect.Interface {
+		vValue.Elem().Set(instanceValue)
+	} else if vType.Kind() == reflect.Ptr && !vValue.Elem().IsValid() {
+		log.Panicf("Cannot resolve into zero-value pointer %#v\n", vValue)
+	} else {
+		vValue.Elem().Set(instanceValue.Elem())
+	}
+}
+
 func (c *Container) Call(fn interface{}, extraArgs []interface{}) []interface{} {
 	fnType := reflect.TypeOf(fn)
 	fnValue := reflect.ValueOf(fn)
@@ -62,12 +93,12 @@ func (c *Container) Call(fn interface{}, extraArgs []interface{}) []interface{} 
 	// Build argument values one-by-one
 	for i := 0; i < numArgsToFill; i++ {
 		argType := fnType.In(i)
-		var sw *ServiceWrapper
+		var sw *serviceWrapper
 		switch argType.Kind() {
 		case reflect.Interface:
-			sw = c.FindServiceWrapperByInterface(argType)
+			sw = c.findServiceWrapperByInterface(argType)
 		case reflect.Ptr:
-			sw = c.FindServiceWrapperByPtr(argType)
+			sw = c.findServiceWrapperByPtr(argType)
 		default:
 			sw = c.FindServiceWrapperByValue(argType)
 		}
@@ -79,7 +110,7 @@ func (c *Container) Call(fn interface{}, extraArgs []interface{}) []interface{} 
 		filledArgs[i] = reflect.ValueOf(sw.Make())
 	}
 
-	allArgs := append(filledArgs, Values(extraArgs)...)
+	allArgs := append(filledArgs, getValues(extraArgs)...)
 	returnValues := fnValue.Call(allArgs)
 	returnInstances := make([]interface{}, len(returnValues))
 	for i, rv := range returnValues {
@@ -89,12 +120,12 @@ func (c *Container) Call(fn interface{}, extraArgs []interface{}) []interface{} 
 	return returnInstances
 }
 
-func (c *Container) FindServiceWrapperByInterface(iType reflect.Type) *ServiceWrapper {
+func (c *Container) findServiceWrapperByInterface(iType reflect.Type) *serviceWrapper {
 	if iType.Kind() != reflect.Interface {
 		panic("Argument type must be an interface")
 	}
 
-	var matchedSW *ServiceWrapper
+	var matchedSW *serviceWrapper
 	leastMethods := -1
 	for _, sw := range c.registered {
 		//fmt.Printf("Checking %v =? %v\n", iType, sw.instanceType)
@@ -119,7 +150,7 @@ func (c *Container) FindServiceWrapperByInterface(iType reflect.Type) *ServiceWr
 	return matchedSW
 }
 
-func (c *Container) FindServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrapper {
+func (c *Container) findServiceWrapperByPtr(ptrType reflect.Type) *serviceWrapper {
 	if ptrType.Kind() != reflect.Ptr {
 		panic("Argument type must be an pointer")
 	}
@@ -140,7 +171,7 @@ func (c *Container) FindServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrappe
 	return nil
 }
 
-func (c *Container) FindServiceWrapperByValue(valueType reflect.Type) *ServiceWrapper {
+func (c *Container) FindServiceWrapperByValue(valueType reflect.Type) *serviceWrapper {
 	for _, sw := range c.registered {
 		if sw.instanceType.AssignableTo(valueType) {
 			return sw

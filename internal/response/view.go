@@ -1,4 +1,4 @@
-package hemlock
+package response
 
 type View struct {
 	Status int

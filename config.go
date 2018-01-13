@@ -1,14 +1,15 @@
 package hemlock
 
 type Config struct {
+	Name      string
 	Env       string
 	URL       string
-	Providers Providers
+	Providers []Provider
 	Database  *DatabaseConfig
-	Server    *ServerConfig
+	HTTP      *HTTPConfig
 }
 
-type ServerConfig struct {
+type HTTPConfig struct {
 	Host string
 	Port string
 }

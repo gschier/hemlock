@@ -2,13 +2,12 @@ package hemlock
 
 import (
 	"context"
-	"github.com/gschier/hemlock/internal"
-	"reflect"
+	"github.com/gschier/hemlock/internal/container"
 )
 
 type Application struct {
 	Config    *Config
-	container *internal.Container
+	container *container.Container
 	ctx       context.Context
 }
 
@@ -20,7 +19,7 @@ func NewApplication(config *Config) *Application {
 	// Ensure all service constructors take in *Application as an
 	// argument
 	serviceConstructorArgs := []interface{}{app}
-	app.container = internal.NewContainer(serviceConstructorArgs)
+	app.container = container.New(serviceConstructorArgs)
 
 	// Add providers from config
 	for _, p := range app.Config.Providers {
@@ -59,30 +58,11 @@ func (a *Application) ResolveInto(fn interface{}, extraArgs ...interface{}) []in
 }
 
 func (a *Application) Make(i interface{}) interface{} {
-	iType := reflect.TypeOf(i)
-	internal.AssertPtrType(iType, "Cannot make non-pointer")
-
-	var sw *internal.ServiceWrapper
-	if iType.Elem().Kind() == reflect.Interface {
-		sw = a.container.FindServiceWrapperByInterface(iType.Elem())
-	} else {
-		sw = a.container.FindServiceWrapperByPtr(iType)
-	}
-
-	return sw.Make()
+	return a.container.Make(i)
 }
 
 func (a *Application) Resolve(v interface{}) {
-	vType, vValue := internal.TypeAndValue(v)
-
-	instance := a.Make(v)
-	instanceValue := reflect.ValueOf(instance)
-
-	if vType.Elem().Kind() == reflect.Interface {
-		vValue.Elem().Set(instanceValue)
-	} else {
-		vValue.Elem().Set(instanceValue.Elem())
-	}
+	a.container.Resolve(v)
 }
 
 func (a *Application) Env(name string) string {

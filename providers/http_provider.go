@@ -20,7 +20,7 @@ func (p *HttpProvider) Boot(app *hemlock.Application) {
 
 	srv := &http.Server{
 		Handler: router.Handler(),
-		Addr: app.Config.Server.Host+":"+app.Config.Server.Port,
+		Addr: app.Config.HTTP.Host+":"+app.Config.HTTP.Port,
 	}
 
 	fmt.Printf("Starting server at %v\n", srv.Addr)

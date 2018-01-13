@@ -1,11 +1,11 @@
-package internal
+package container
 
 import (
 	"log"
 	"reflect"
 )
 
-type ServiceWrapper struct {
+type serviceWrapper struct {
 	singleton       bool
 	cachedInstance  interface{}
 	constructor     interface{}
@@ -13,20 +13,20 @@ type ServiceWrapper struct {
 	instanceType    reflect.Type
 }
 
-func newServiceWrapper(fn interface{}, singleton bool, constructorArgs []interface{}) *ServiceWrapper {
+func newServiceWrapper(fn interface{}, singleton bool, constructorArgs []interface{}) *serviceWrapper {
 	fnType := reflect.TypeOf(fn)
 	instanceType := fnType.Out(0)
 
 	// Make sure func has correct arguments (*Application)
-	inTypes := Types(constructorArgs)
-	AssertInTypes(fnType, inTypes, "Func arg mismatch")
+	inTypes := getTypes(constructorArgs)
+	assertInTypes(fnType, inTypes, "Func arg mismatch")
 
 	// Make sure func has correct return values (value, error)
 	outTypes := []reflect.Type{AnyType, ErrType}
-	AssertOutTypes(fnType, outTypes, "Func return mismatch")
+	assertOutTypes(fnType, outTypes, "Func return mismatch")
 
 	// Add the dependency to the graph
-	return &ServiceWrapper{
+	return &serviceWrapper{
 		singleton:       singleton,
 		cachedInstance:  nil,
 		constructor:     fn,
@@ -35,11 +35,11 @@ func newServiceWrapper(fn interface{}, singleton bool, constructorArgs []interfa
 	}
 }
 
-func newServiceWrapperInstance(instance interface{}, singleton bool) *ServiceWrapper {
+func newServiceWrapperInstance(instance interface{}, singleton bool) *serviceWrapper {
 	instanceType := reflect.TypeOf(instance)
 
 	// Add the dependency to the graph
-	return &ServiceWrapper{
+	return &serviceWrapper{
 		singleton:       singleton,
 		cachedInstance:  instance,
 		constructor:     nil,
@@ -48,16 +48,16 @@ func newServiceWrapperInstance(instance interface{}, singleton bool) *ServiceWra
 	}
 }
 
-func (sw *ServiceWrapper) Make() interface{} {
+func (sw *serviceWrapper) Make() interface{} {
 	// Return cached instance if it's a singleton
 	if sw.singleton && sw.cachedInstance != nil {
 		return sw.cachedInstance
 	}
 
 	// Create a new instance by calling the constructor
-	outValues := CallFunc(
+	outValues := callFunc(
 		reflect.ValueOf(sw.constructor),
-		Values(sw.constructorArgs)...,
+		getValues(sw.constructorArgs)...,
 	)
 
 	err := outValues[1].Interface()

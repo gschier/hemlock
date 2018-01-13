@@ -2,6 +2,24 @@
 
 
 [[projects]]
+  name = "github.com/alecthomas/kingpin"
+  packages = ["."]
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/alecthomas/template"
+  packages = [".","parse"]
+  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -25,9 +43,27 @@
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
 
+[[projects]]
+  branch = "master"
+  name = "github.com/tcnksm/go-input"
+  packages = ["."]
+  revision = "bbe13e92fa7dda71a4e012e3f427df11866c7651"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "810d7000345868fc619eb81f46307107118f4ae1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d2556f8fc58f637069df1042b0da0bfee37eaf55ea0c68797271c72fed936669"
+  inputs-digest = "2ab3662fa8d4d2b0bbe3102ab0244a76a70e36d46f1d5cf343c879430e011e28"
   solver-name = "gps-cdcl"
   solver-version = 1

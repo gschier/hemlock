@@ -1,7 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"github.com/alecthomas/kingpin"
+	"github.com/gschier/hemlock/internal/cli"
+	"os"
 
-func main () {
-	fmt.Printf("TODO: CLI")
+	// Commands
+	_ "github.com/gschier/hemlock/internal/cli"
+)
+
+var (
+	Cmd = kingpin.New("hemlock", "")
+)
+
+func main() {
+	_, err := cli.Cmd.Parse(os.Args[1:])
+	if err != nil {
+		panic(err)
+	}
 }
