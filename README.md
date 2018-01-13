@@ -1,4 +1,4 @@
-<p align="center"><img src="https://www.dropbox.com/s/juug62f2oie1jnu/logo.svg?dl=1"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/gschier/schier.co/master/site/static/images/logo.svg"></p>
 
 ## About Hemlock
 
