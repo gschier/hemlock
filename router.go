@@ -1,7 +1,6 @@
 package hemlock
 
 import (
-	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/gschier/hemlock/interfaces"
 	"net/http"
@@ -51,12 +50,13 @@ func (r *Router) Handler() http.Handler {
 	return r.root
 }
 
-func (r *Router) addRoute(method string, uri string, callback interfaces.Callback) {
-	fmt.Printf("ADDED ROUTE %v %v\n", method, uri)
-	r.root.MethodFunc(method, uri, func(w http.ResponseWriter, req *http.Request) {
-		r.app.Instance(w)
-		r.app.Instance(req)
-		r.app.Instance(NewResponse(w))
+func (r *Router) addRoute(method string, pattern string, callback interfaces.Callback) {
+	r.root.MethodFunc(method, pattern, func(w http.ResponseWriter, req *http.Request) {
+		//newApp := CloneApplication(r.app)
+		newApp := r.app
+		newApp.Instance(w)
+		newApp.Instance(req)
+		newApp.Instance(NewResponse(w))
 
 		c := chi.RouteContext(req.Context())
 		extraArgs := make([]interface{}, len(c.URLParams.Values))
@@ -64,9 +64,9 @@ func (r *Router) addRoute(method string, uri string, callback interfaces.Callbac
 			extraArgs[i] = v
 		}
 
-		results := r.app.ResolveInto(callback, extraArgs...)
+		results := newApp.ResolveInto(callback, extraArgs...)
 		if len(results) != 1 {
-			panic("Route did not return a value. Got "+string(len(results)))
+			panic("Route did not return a value. Got " + string(len(results)))
 		}
 
 		view, ok := results[0].(*View)
@@ -82,8 +82,7 @@ func (r *Router) addRoute(method string, uri string, callback interfaces.Callbac
 // Should be a function
 type Callback interface{}
 
-type Request struct {
-}
+type Request struct{}
 
 // Input grabs input from the request body by name
 func (req *Request) Input(name string) string {

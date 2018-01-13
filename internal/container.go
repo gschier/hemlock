@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log"
 	"reflect"
 )
 
@@ -13,6 +14,19 @@ func NewContainer(serviceConstructorArgs []interface{}) *Container {
 	return &Container{
 		registered:             make(map[reflect.Type]*ServiceWrapper),
 		serviceConstructorArgs: serviceConstructorArgs,
+	}
+}
+
+// Bind binds the type of v as a dependency
+func (c *Container) Clone() *Container {
+	newRegistered := make(map[reflect.Type]*ServiceWrapper, len(c.registered))
+	for t, sw := range c.registered {
+		newRegistered[t] = sw
+	}
+
+	return &Container{
+		registered:             newRegistered,
+		serviceConstructorArgs: c.serviceConstructorArgs,
 	}
 }
 
@@ -58,6 +72,10 @@ func (c *Container) Call(fn interface{}, extraArgs []interface{}) []interface{} 
 			sw = c.FindServiceWrapperByValue(argType)
 		}
 
+		if sw == nil {
+			log.Panicf("Failed to find correct type %v\n", argType)
+		}
+
 		filledArgs[i] = reflect.ValueOf(sw.Make())
 	}
 
@@ -94,11 +112,11 @@ func (c *Container) FindServiceWrapperByInterface(iType reflect.Type) *ServiceWr
 		matchedSW = sw
 	}
 
-	if matchedSW != nil {
-		return matchedSW
+	if matchedSW == nil {
+		log.Panicf("Could not resolve anything for interface %v out of%v\n", iType, c.registered)
 	}
 
-	return nil
+	return matchedSW
 }
 
 func (c *Container) FindServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrapper {
@@ -116,9 +134,9 @@ func (c *Container) FindServiceWrapperByPtr(ptrType reflect.Type) *ServiceWrappe
 		if sw.instanceType.AssignableTo(ptrType) {
 			return sw
 		}
-
 	}
 
+	log.Panicf("Could not resolve anything for ptr %v out of %v\n", ptrType, c.registered)
 	return nil
 }
 

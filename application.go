@@ -1,6 +1,7 @@
 package hemlock
 
 import (
+	"context"
 	"github.com/gschier/hemlock/internal"
 	"reflect"
 )
@@ -8,6 +9,7 @@ import (
 type Application struct {
 	Config    *Config
 	container *internal.Container
+	ctx       context.Context
 }
 
 func NewApplication(config *Config) *Application {
@@ -31,6 +33,13 @@ func NewApplication(config *Config) *Application {
 	}
 
 	return app
+}
+
+func CloneApplication(app *Application) *Application {
+	return &Application{
+		Config:    app.Config,
+		container: app.container.Clone(),
+	}
 }
 
 func (a *Application) Bind(fn interface{}) {
@@ -58,10 +67,6 @@ func (a *Application) Make(i interface{}) interface{} {
 		sw = a.container.FindServiceWrapperByInterface(iType.Elem())
 	} else {
 		sw = a.container.FindServiceWrapperByPtr(iType)
-	}
-
-	if sw == nil {
-		panic("Could not resolve anything for that type")
 	}
 
 	return sw.Make()
