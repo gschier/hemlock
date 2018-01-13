@@ -1,4 +1,4 @@
-![Hemlock Web Framework](https://user-images.githubusercontent.com/587576/34905149-082e27a2-f84b-11e7-81e4-68f5d516de4c.png)
+<p align="center"><img src="https://www.dropbox.com/s/juug62f2oie1jnu/logo.svg?dl=1"></p>
 
 ## About Hemlock
 
