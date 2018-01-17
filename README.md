@@ -5,3 +5,24 @@
 Hemlock is a web application framework for [Go](https://golang.org/).
 
 **This project is still in the proof-of-concept phase so no peeking! 🙈🙈**
+
+## Installation
+
+```bash
+go get github.com/gschier/hemlock
+```
+
+## Getting Started
+
+Create a new application in desired folder
+
+```bash
+hemlock new path/to/my/app
+```
+
+```bash
+cd path/to/my/app
+```
+
+```bash
+```

@@ -16,8 +16,7 @@ func NewApplication(config *Config) *Application {
 		Config: config,
 	}
 
-	// Ensure all service constructors take in *Application as an
-	// argument
+	// Ensure all constructors take in *Application as an argument
 	serviceConstructorArgs := []interface{}{app}
 	app.container = container.New(serviceConstructorArgs)
 
@@ -35,10 +34,13 @@ func NewApplication(config *Config) *Application {
 }
 
 func CloneApplication(app *Application) *Application {
-	return &Application{
-		Config:    app.Config,
-		container: app.container.Clone(),
-	}
+	newApp := &Application{Config: app.Config}
+
+	// Ensure all constructors take in *Application as an argument
+	serviceConstructorArgs := []interface{}{newApp}
+	newApp.container = app.container.Clone(serviceConstructorArgs)
+
+	return app
 }
 
 func (a *Application) Bind(fn interface{}) {

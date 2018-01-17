@@ -3,14 +3,14 @@ package providers
 import (
 	"context"
 	"github.com/gschier/hemlock"
-	"net/http"
+	"github.com/gschier/hemlock/interfaces"
 )
 
 type ContextProvider struct{}
 
 func (p *ContextProvider) Register(c hemlock.Container) {
 	c.Bind(func (app *hemlock.Application) (context.Context, error) {
-		var r http.Request
+		var r interfaces.Request
 		app.Resolve(&r)
 		return r.Context(), nil
 	})

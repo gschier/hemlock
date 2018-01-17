@@ -54,8 +54,7 @@ func (router *Router) Handler() http.Handler {
 
 func (router *Router) addRoute(method string, pattern string, callback interfaces.Callback) {
 	router.root.MethodFunc(method, pattern, func(w http.ResponseWriter, r *http.Request) {
-		//newApp := CloneApplication(router.app)
-		newApp := router.app
+		newApp := CloneApplication(router.app)
 		newApp.Instance(request.New(r))
 		newApp.Instance(response.New(w))
 
@@ -82,4 +81,3 @@ func (router *Router) addRoute(method string, pattern string, callback interface
 
 // Should be a function
 type Callback interface{}
-

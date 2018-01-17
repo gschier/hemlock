@@ -18,16 +18,12 @@ func New(serviceConstructorArgs []interface{}) *Container {
 }
 
 // Bind binds the type of v as a dependency
-func (c *Container) Clone() *Container {
-	newRegistered := make(map[reflect.Type]*serviceWrapper, len(c.registered))
+func (c *Container) Clone(serviceConstructorArgs []interface{}) *Container {
+	newContainer := New(serviceConstructorArgs)
 	for t, sw := range c.registered {
-		newRegistered[t] = sw
+		newContainer.registered[t] = sw
 	}
-
-	return &Container{
-		registered:             newRegistered,
-		serviceConstructorArgs: c.serviceConstructorArgs,
-	}
+	return newContainer
 }
 
 // Bind binds the type of v as a dependency
@@ -144,7 +140,7 @@ func (c *Container) findServiceWrapperByInterface(iType reflect.Type) *serviceWr
 	}
 
 	if matchedSW == nil {
-		log.Panicf("Could not resolve anything for interface %v out of%v\n", iType, c.registered)
+		log.Panicf("Could not resolve anything for interface %v out of %v\n", iType, c.registered)
 	}
 
 	return matchedSW

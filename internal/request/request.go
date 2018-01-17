@@ -1,6 +1,7 @@
 package request
 
 import (
+	"context"
 	"github.com/gschier/hemlock/interfaces"
 	"io"
 	"net/http"
@@ -32,5 +33,9 @@ func (req *Request) Cookie(name string) string {
 // Cookie grabs file name
 func (req *Request) File(name string) io.Reader {
 	panic("Implement me")
+}
+
+func (req *Request) Context() context.Context {
+	return req.r.Context()
 }
 
