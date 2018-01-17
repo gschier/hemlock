@@ -20,9 +20,9 @@ Create a new application in desired folder
 hemlock new path/to/my/app
 ```
 
-```bash
-cd path/to/my/app
-```
+Build and run the sample app
 
 ```bash
+cd path/to/my/app
+go build -o bin/server && ./bin/server
 ```
