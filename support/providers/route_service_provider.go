@@ -2,8 +2,8 @@ package providers
 
 import (
 	"github.com/gschier/hemlock"
-	"github.com/gschier/hemlock/internal/router"
 	"github.com/gschier/hemlock/interfaces"
+	"github.com/gschier/hemlock/internal/router"
 )
 
 type RouteServiceProvider struct{}

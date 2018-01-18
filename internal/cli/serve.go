@@ -30,7 +30,7 @@ func init() {
 			watchApp()
 		} else {
 			// Block until it finishes
-			<- buildAndRunApp()
+			<-buildAndRunApp()
 		}
 
 		return nil

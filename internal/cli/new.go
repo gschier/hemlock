@@ -22,9 +22,9 @@ func init() {
 		dest := path.Clean(*cmdDest)
 		q := fmt.Sprintf("Create new project in %s? [Y/n]", dest)
 		answer, err := UI.Ask(q, &input.Options{
-			Default: "Yes",
+			Default:     "Yes",
 			HideDefault: true,
-			HideOrder: true,
+			HideOrder:   true,
 		})
 
 		if err != nil {

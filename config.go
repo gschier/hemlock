@@ -1,11 +1,11 @@
 package hemlock
 
 type Config struct {
-	Name      string
-	Env       string
-	URL       string
-	Database  *DatabaseConfig
-	HTTP      *HTTPConfig
+	Name     string
+	Env      string
+	URL      string
+	Database *DatabaseConfig
+	HTTP     *HTTPConfig
 }
 
 type HTTPConfig struct {

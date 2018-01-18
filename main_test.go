@@ -1,8 +1,8 @@
 package hemlock_test
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
