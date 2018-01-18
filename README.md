@@ -6,7 +6,7 @@
 
 ## About Hemlock
 
-Hemlock is a web application framework for [Go](https://golang.org/).
+Hemlock is a web application framework for [Go](https://golang.org/) 1.9 or newer.
 
 **This project is still in the proof-of-concept phase so no peeking! 🙈🙈**
 
