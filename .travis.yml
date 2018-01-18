@@ -1,0 +1,14 @@
+language: go
+
+go:
+  - 1.7
+  - 1.9
+
+install:
+  - dep ensure
+
+script:
+  - go test ./...
+
+notifications:
+  email: false
