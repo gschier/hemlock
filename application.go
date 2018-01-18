@@ -11,7 +11,7 @@ type Application struct {
 	ctx       context.Context
 }
 
-func NewApplication(config *Config) *Application {
+func NewApplication(config *Config, providers []Provider) *Application {
 	app := &Application{
 		Config: config,
 	}
@@ -21,12 +21,12 @@ func NewApplication(config *Config) *Application {
 	app.container = container.New(serviceConstructorArgs)
 
 	// Add providers from config
-	for _, p := range app.Config.Providers {
-		p.Register(app)
+	for _, p := range providers {
+		p.Register(app.container)
 	}
 
 	// Boot all providers
-	for _, p := range app.Config.Providers {
+	for _, p := range providers {
 		p.Boot(app)
 	}
 
@@ -38,7 +38,7 @@ func CloneApplication(app *Application) *Application {
 
 	// Ensure all constructors take in *Application as an argument
 	serviceConstructorArgs := []interface{}{newApp}
-	newApp.container = app.container.Clone(serviceConstructorArgs)
+	newApp.container = container.Clone(app.container, serviceConstructorArgs)
 
 	return app
 }

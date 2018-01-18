@@ -4,7 +4,6 @@ type Config struct {
 	Name      string
 	Env       string
 	URL       string
-	Providers []Provider
 	Database  *DatabaseConfig
 	HTTP      *HTTPConfig
 }

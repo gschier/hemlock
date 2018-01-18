@@ -1,4 +1,4 @@
-package response
+package router
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 )
 
 type Response struct {
-	w http.ResponseWriter
-	status int
-	data interface{}
+	w       http.ResponseWriter
+	status  int
+	data    interface{}
 	cookies map[string]string
 }
 
-func New(w http.ResponseWriter) interfaces.Response {
+func newResponse(w http.ResponseWriter) interfaces.Response {
 	return &Response{w: w}
 }
 
@@ -40,6 +40,6 @@ func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response 
 func (res *Response) View() interfaces.View {
 	return &View{
 		Status: res.status,
-		Bytes: []byte(fmt.Sprintf("%v", res.data)),
+		Bytes:  []byte(fmt.Sprintf("%v", res.data)),
 	}
 }

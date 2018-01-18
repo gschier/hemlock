@@ -8,7 +8,7 @@ import (
 
 type ContextProvider struct{}
 
-func (p *ContextProvider) Register(c hemlock.Container) {
+func (p *ContextProvider) Register(c interfaces.Container) {
 	c.Bind(func (app *hemlock.Application) (context.Context, error) {
 		var r interfaces.Request
 		app.Resolve(&r)

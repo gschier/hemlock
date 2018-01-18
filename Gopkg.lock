@@ -20,28 +20,16 @@
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/go-chi/chi"
   packages = ["."]
   revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
   version = "v3.3.2"
 
 [[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert"]
-  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
-  version = "v1.2.0"
+  name = "github.com/howeyc/fsnotify"
+  packages = ["."]
+  revision = "441bbc86b167f3c1f4786afae9931403b99fdacf"
+  version = "v0.9.0"
 
 [[projects]]
   branch = "master"
@@ -64,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2ab3662fa8d4d2b0bbe3102ab0244a76a70e36d46f1d5cf343c879430e011e28"
+  inputs-digest = "c072efa4f3f8a15caf11b54c4e95b8322059282d890eff80c6a95d60d825fc86"
   solver-name = "gps-cdcl"
   solver-version = 1

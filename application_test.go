@@ -1,9 +1,9 @@
-package hemlock_test
+package hemlock
 
 import (
 	"github.com/gschier/hemlock"
 	. "github.com/gschier/hemlock/testutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/gschier/hemlock/vendor/github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )

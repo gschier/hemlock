@@ -1,8 +1,7 @@
-package request
+package router
 
 import (
 	"context"
-	"github.com/gschier/hemlock/interfaces"
 	"io"
 	"net/http"
 )
@@ -11,7 +10,7 @@ type Request struct {
 	r *http.Request
 }
 
-func New(r *http.Request) interfaces.Request {
+func newRequest(r *http.Request) *Request {
 	return &Request{r: r}
 }
 

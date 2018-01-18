@@ -18,7 +18,7 @@ func New(serviceConstructorArgs []interface{}) *Container {
 }
 
 // Bind binds the type of v as a dependency
-func (c *Container) Clone(serviceConstructorArgs []interface{}) *Container {
+func Clone(c *Container, serviceConstructorArgs []interface{}) *Container {
 	newContainer := New(serviceConstructorArgs)
 	for t, sw := range c.registered {
 		newContainer.registered[t] = sw

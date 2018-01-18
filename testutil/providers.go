@@ -2,12 +2,11 @@ package testutil
 
 import (
 	"github.com/gschier/hemlock"
+	"github.com/gschier/hemlock/interfaces"
 )
 
 func NewTestApplication(p ...hemlock.Provider) *hemlock.Application {
-	return hemlock.NewApplication(&hemlock.Config{
-		Providers: p,
-	})
+	return hemlock.NewApplication(&hemlock.Config{}, p)
 }
 
 type CarServiceInterface interface {
@@ -30,7 +29,7 @@ type CarServiceProvider struct {
 	noise string
 }
 
-func (csp *CarServiceProvider) Register(ioc hemlock.Container) {
+func (csp *CarServiceProvider) Register(ioc interfaces.Container) {
 	ioc.Singleton(func(app *hemlock.Application) (*CarService, error) {
 		return &CarService{Noise: app.Env("honk")}, nil
 	})
@@ -42,7 +41,7 @@ func (csp *CarServiceProvider) Boot(app *hemlock.Application) {
 
 type StringServiceProvider struct{}
 
-func (ssp *StringServiceProvider) Register(ioc hemlock.Container) {
+func (ssp *StringServiceProvider) Register(ioc interfaces.Container) {
 	ioc.Singleton(func(app *hemlock.Application) (string, error) {
 		return "Hello!", nil
 	})

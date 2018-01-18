@@ -1,4 +1,4 @@
-package response
+package router
 
 type View struct {
 	Status int

@@ -24,5 +24,5 @@ Build and run the sample app
 
 ```bash
 cd path/to/my/app
-hemlock run 
+hemlock serve --watch
 ```
