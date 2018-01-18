@@ -1,4 +1,7 @@
 <p align="center"><img src="https://schier.co/images/logo.svg"></p>
+<p align="center">
+[![Build Status](https://travis-ci.org/gschier/hemlock.svg?branch=master)](https://travis-ci.org/gschier/hemlock)
+</p>
 
 ## About Hemlock
 
