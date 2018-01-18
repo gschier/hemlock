@@ -4,11 +4,16 @@ go:
   - 1.9
   - master
 
-# Don't install anything
-install: true
+install:
+  - go get -u github.com/golang/dep/cmd/dep
+  - dep ensure
 
 script:
   - go test ./...
 
 notifications:
   email: false
+
+cache:
+  directories:
+    - vendor
