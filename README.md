@@ -2,6 +2,7 @@
 <p align="center">
 <a href="https://travis-ci.org/gschier/hemlock"><img src="https://travis-ci.org/gschier/hemlock.svg?branch=master"/></a>
 <a href="license"><img src="https://img.shields.io/github/license/mashape/apistatus.svg"/></a>
+<a href="https://goreportcard.com/report/github.com/gschier/hemlock"><img src="https://goreportcard.com/badge/github.com/gschier/hemlock"></a>
 </p>
 
 ## About Hemlock
