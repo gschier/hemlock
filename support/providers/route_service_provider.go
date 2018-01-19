@@ -9,15 +9,11 @@ import (
 type RouteServiceProvider struct{}
 
 func (p *RouteServiceProvider) Register(c interfaces.Container) {
-	p.registerRouter(c)
+	c.Singleton(func(app *hemlock.Application) (interfaces.Router, error) {
+		return router.NewRouter(app), nil
+	})
 }
 
 func (p *RouteServiceProvider) Boot(*hemlock.Application) {
 	// Nothing
-}
-
-func (p *RouteServiceProvider) registerRouter(c interfaces.Container) {
-	c.Singleton(func(app *hemlock.Application) (interfaces.Router, error) {
-		return router.NewRouter(app), nil
-	})
 }

@@ -39,7 +39,7 @@ func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response 
 
 func (res *Response) View() interfaces.View {
 	return &View{
-		Status: res.status,
-		Bytes:  []byte(fmt.Sprintf("%v", res.data)),
+		status: res.status,
+		data:   res.data,
 	}
 }

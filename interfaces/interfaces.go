@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Container interface {
@@ -18,6 +19,9 @@ type Container interface {
 }
 
 type Request interface {
+	// URL returns the URL of the request
+	URL() *url.URL
+
 	// Input grabs input from the request body by name
 	Input(name string) string
 
@@ -43,7 +47,8 @@ type Response interface {
 }
 
 type View interface {
-	// Nothing yet
+	Status() int
+	Write(w io.Writer)
 }
 
 type Router interface {
@@ -54,8 +59,11 @@ type Router interface {
 	Patch(uri string, callback Callback)
 	Delete(uri string, callback Callback)
 	Options(uri string, callback Callback)
+	Use(Middleware)
 	Handler() http.Handler
 }
 
 // Callback is a function that takes injected arguments
-type Callback = interface{}
+type Callback interface{}
+
+type Middleware func(req Request, res Response, next func(req Request, res Response) View) View

@@ -6,19 +6,25 @@ import (
 	"github.com/howeyc/fsnotify"
 	"go/build"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
 var stopChannel chan bool
+var changeChannel chan string
+var doneChannel chan error
 var isRunning = false
 
 func init() {
 	stopChannel = make(chan bool)
+	changeChannel = make(chan string)
+	doneChannel = make(chan error)
 
 	cmd := Command("serve", "Run a Hemlock project")
 
@@ -30,7 +36,8 @@ func init() {
 			watchApp()
 		} else {
 			// Block until it finishes
-			<-buildAndRunApp()
+			buildAndRunApp()
+			<- doneChannel
 		}
 
 		return nil
@@ -60,7 +67,7 @@ func importPathFromCurrentDir() string {
 	return filepath.ToSlash(importPath)
 }
 
-func buildApp() {
+func buildApp() error {
 	fmt.Printf("Building %v...\n", filepath.Base(buildPath()))
 	cmd := exec.Command("go", "build", "-o", buildPath(), ".")
 	stderr, err := cmd.StderrPipe()
@@ -75,7 +82,7 @@ func buildApp() {
 
 	err = cmd.Start()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	io.Copy(os.Stdout, stdout)
@@ -83,17 +90,16 @@ func buildApp() {
 
 	err = cmd.Wait()
 	if _, ok := err.(*exec.ExitError); ok {
-		os.Exit(1)
+		return err
 	}
 
 	if err != nil {
 		panic(err)
 	}
+	return nil
 }
 
-func runApp() chan bool {
-	doneChannel := make(chan bool)
-
+func runApp() {
 	fmt.Printf("Running...\n")
 	cmd := exec.Command(buildPath())
 
@@ -127,61 +133,90 @@ func runApp() chan bool {
 	go func() {
 		cmd.Wait()
 		isRunning = false
-		doneChannel <- true
+		doneChannel <- nil
 	}()
-
-	return doneChannel
 }
 
-func watchApp() {
-	fmt.Printf("Watching for changes...\n")
+func watchFolder(path string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	done := make(chan bool)
-
 	// Process events
 	go func() {
-		needsToBuild := false
-		nextBuild := time.Now()
 		for {
 			select {
-			case <-watcher.Event:
-				needsToBuild = true
+			case ev := <-watcher.Event:
+				changeChannel <- ev.Name
 			case err := <-watcher.Error:
 				fmt.Printf("File watch error: %v\n", err)
-			default:
-				if needsToBuild && time.Now().After(nextBuild) {
-					buildAndRunApp()
-					needsToBuild = false
-					nextBuild = time.Now().Add(time.Second * 5)
-				}
-				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}()
 
-	err = watcher.Watch(".")
+	err = watcher.Watch(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Hang so program doesn't exit
-	<-done
-
-	/* ... do stuff ... */
-	watcher.Close()
+	fmt.Printf("Watching %v...\n", path)
 }
 
-func buildAndRunApp() chan bool {
+func watchApp() {
+	dirsWithGoFiles := make([]string, 0)
+	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			if len(path) > 1 && strings.HasPrefix(filepath.Base(path), ".") {
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(filepath.Base(path), "_") {
+				return filepath.SkipDir
+			}
+
+			things, _ := ioutil.ReadDir(path)
+			for _, thing := range things {
+				if strings.HasSuffix(thing.Name(), ".go") {
+					dirsWithGoFiles = append(dirsWithGoFiles, path)
+					break
+				}
+			}
+		}
+
+		return err
+	})
+
+	for _, path := range dirsWithGoFiles {
+		watchFolder(path)
+	}
+
+	needsToBuild := false
+	nextBuild := time.Now()
+	fmt.Printf("Watching for changes...\n")
+	for range changeChannel {
+		needsToBuild = true
+		//fmt.Printf("File changed: %v...\n", path)
+		if needsToBuild && time.Now().After(nextBuild) {
+			buildAndRunApp()
+			needsToBuild = false
+			nextBuild = time.Now().Add(time.Second * 5)
+		}
+	}
+}
+
+func buildAndRunApp() {
 	// Build before we kill the existing one
-	buildApp()
+	err := buildApp()
+	if err != nil {
+		fmt.Printf("Build error: %v\n", err)
+		return
+	}
 
 	if isRunning {
 		stopChannel <- true
+		<- doneChannel
 	}
 
-	return runApp()
+	runApp()
 }
