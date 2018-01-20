@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
 	"net/http"
@@ -16,6 +17,14 @@ type router struct {
 
 func NewRouter(app *hemlock.Application) *router {
 	root := chi.NewRouter()
+
+	// TODO: Make middleware configurable
+	root.Use(middleware.Recoverer)
+	root.Use(middleware.DefaultCompress)
+	root.Use(middleware.CloseNotify)
+	root.Use(middleware.Logger)
+	root.Use(middleware.RedirectSlashes)
+
 	router := &router{root: root, app: app}
 	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.View {
 		return res.Data("Not Found").Status(404).View()
