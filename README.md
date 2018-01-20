@@ -1,4 +1,4 @@
-<p align="center"><img src="https://schier.co/images/logo.svg"></p>
+<p align="center"><img src="https://schier.co/images/hemlock.svg"></p>
 <p align="center">
 <a href="https://travis-ci.org/gschier/hemlock"><img src="https://travis-ci.org/gschier/hemlock.svg?branch=master"/></a>
 <a href="license"><img src="https://img.shields.io/github/license/mashape/apistatus.svg"/></a>
