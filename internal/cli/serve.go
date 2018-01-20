@@ -37,7 +37,7 @@ func init() {
 		} else {
 			// Block until it finishes
 			buildAndRunApp()
-			<- doneChannel
+			<-doneChannel
 		}
 
 		return nil
@@ -164,10 +164,18 @@ func watchFolder(path string) {
 }
 
 func watchApp() {
-	dirsWithGoFiles := make([]string, 0)
+	watchableDirs := make([]string, 0)
 	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			if len(path) > 1 && strings.HasPrefix(filepath.Base(path), ".") {
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(path, "node_modules/") {
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(path, "vendor/") {
 				return filepath.SkipDir
 			}
 
@@ -178,7 +186,11 @@ func watchApp() {
 			things, _ := ioutil.ReadDir(path)
 			for _, thing := range things {
 				if strings.HasSuffix(thing.Name(), ".go") {
-					dirsWithGoFiles = append(dirsWithGoFiles, path)
+					watchableDirs = append(watchableDirs, path)
+					break
+				}
+				if strings.HasSuffix(thing.Name(), ".md") {
+					watchableDirs = append(watchableDirs, path)
 					break
 				}
 			}
@@ -187,20 +199,25 @@ func watchApp() {
 		return err
 	})
 
-	for _, path := range dirsWithGoFiles {
+	for _, path := range watchableDirs {
 		watchFolder(path)
 	}
 
 	needsToBuild := false
 	nextBuild := time.Now()
 	fmt.Printf("Watching for changes...\n")
-	for range changeChannel {
-		needsToBuild = true
-		//fmt.Printf("File changed: %v...\n", path)
-		if needsToBuild && time.Now().After(nextBuild) {
-			buildAndRunApp()
-			needsToBuild = false
-			nextBuild = time.Now().Add(time.Second * 5)
+	for {
+		select {
+		case <-changeChannel:
+			needsToBuild = true
+		default:
+			if needsToBuild && time.Now().After(nextBuild) {
+				buildAndRunApp()
+				needsToBuild = false
+				nextBuild = time.Now().Add(time.Second * 3)
+			}
+			// Sleep so we don't thrash too much
+			time.Sleep(time.Millisecond * 200)
 		}
 	}
 }
@@ -215,7 +232,7 @@ func buildAndRunApp() {
 
 	if isRunning {
 		stopChannel <- true
-		<- doneChannel
+		<-doneChannel
 	}
 
 	runApp()

@@ -20,6 +20,10 @@ func NewApplication(config *Config, providers []Provider) *Application {
 	serviceConstructorArgs := []interface{}{app}
 	app.container = container.New(serviceConstructorArgs)
 
+	// Bind some useful things to container
+	app.Instance(app)
+	app.Instance(app.Config)
+
 	// Add providers from config
 	for _, p := range providers {
 		p.Register(app.container)

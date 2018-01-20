@@ -6,6 +6,15 @@ type Config struct {
 	URL      string
 	Database *DatabaseConfig
 	HTTP     *HTTPConfig
+	Extra    map[string]interface{}
+}
+
+func (conf *Config) GetExtraStr (key string) string {
+	v, ok := conf.Extra[key]
+	if !ok {
+		return ""
+	}
+	return v.(string)
 }
 
 type HTTPConfig struct {

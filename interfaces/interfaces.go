@@ -41,6 +41,7 @@ type Request interface {
 type Response interface {
 	Cookie(name, value string) Response
 	Status(status int) Response
+	Template(name string, data interface{}) Response
 	Data(data interface{}) Response
 	Dataf(format string, a ...interface{}) Response
 	View() View

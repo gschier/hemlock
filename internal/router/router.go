@@ -112,6 +112,8 @@ func (router *router) serve (callback interface{}) http.HandlerFunc {
 			w.Header().Add("Content-Type", "application/javascript")
 		} else if strings.HasSuffix(r.URL.Path, ".css") {
 			w.Header().Add("Content-Type", "text/css")
+		} else {
+			w.Header().Add("Content-Type", "text/html")
 		}
 		w.WriteHeader(view.Status())
 		view.Write(w)
