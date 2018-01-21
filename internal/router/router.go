@@ -1,7 +1,6 @@
 package router
 
 import (
-	middleware2 "github.com/getinsomnia/api/http/middleware"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
