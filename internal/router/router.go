@@ -7,6 +7,7 @@ import (
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"net/http"
+	"path/filepath"
 )
 
 type router struct {
@@ -24,6 +25,15 @@ func NewRouter(app *hemlock.Application) *router {
 	root.Use(middleware.CloseNotify)
 	root.Use(middleware.Logger)
 	root.Use(middleware.RedirectSlashes)
+	root.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ext := filepath.Ext(r.URL.Path)
+			if ext == ".css" || ext == ".js" {
+				w.Header().Add("Cache-Control", "public, max-age=31536000")
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
 	root.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("X-Forwarded-Proto") == "http" {
