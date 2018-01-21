@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"io"
@@ -90,5 +91,6 @@ func (res *Response) getRenderContext (data interface{}) interface{} {
 	return map[string]interface{}{
 		"URL": res.r.URL.Path,
 		"Page": data,
+		"CacheBustKey": hemlock.CacheBustKey,
 	}
 }
