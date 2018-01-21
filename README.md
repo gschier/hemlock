@@ -28,6 +28,5 @@ hemlock new path/to/my/app
 Build and run the sample app
 
 ```bash
-cd path/to/my/app
-hemlock serve --watch
+hemlock serve --watch path/to/my/app
 ```

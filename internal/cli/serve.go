@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
 	"github.com/howeyc/fsnotify"
-	"go/build"
 	"io"
 	"io/ioutil"
 	"log"
@@ -28,15 +27,16 @@ func init() {
 
 	cmd := Command("serve", "Run a Hemlock project")
 
-	watch := cmd.Flag("watch", "Restart server when files change").Bool()
+	cmdSrc := cmd.Arg("dest", "").String()
+	cmdWatch := cmd.Flag("watch", "Restart server when files change").Bool()
 
 	cmd.Action(func(context *kingpin.ParseContext) error {
-		if *watch {
-			go buildAndRunApp()
-			watchApp()
+		if *cmdWatch {
+			go buildAndRunApp(*cmdSrc)
+			watchApp(*cmdSrc)
 		} else {
 			// Block until it finishes
-			buildAndRunApp()
+			buildAndRunApp(*cmdSrc)
 			<-doneChannel
 		}
 
@@ -61,15 +61,10 @@ func buildName() string {
 	return filepath.Base(dir)
 }
 
-func importPathFromCurrentDir() string {
-	pwd, _ := os.Getwd()
-	importPath, _ := filepath.Rel(filepath.Join(build.Default.GOPATH, "src"), pwd)
-	return filepath.ToSlash(importPath)
-}
-
-func buildApp() error {
+func buildApp(srcDir string) error {
 	fmt.Printf("Building %v...\n", filepath.Base(buildPath()))
 	cmd := exec.Command("go", "build", "-o", buildPath(), ".")
+	cmd.Dir = srcDir
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		panic(err)
@@ -99,9 +94,10 @@ func buildApp() error {
 	return nil
 }
 
-func runApp() {
+func runApp(srcDir string) {
 	fmt.Printf("Running...\n")
 	cmd := exec.Command(buildPath())
+	cmd.Dir = srcDir
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -163,7 +159,7 @@ func watchFolder(path string) {
 	fmt.Printf("Watching %v...\n", path)
 }
 
-func watchApp() {
+func watchApp(srcDir string) {
 	watchableDirs := make([]string, 0)
 	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
@@ -216,7 +212,7 @@ func watchApp() {
 			needsToBuild = true
 		default:
 			if needsToBuild && time.Now().After(nextBuild) {
-				buildAndRunApp()
+				buildAndRunApp(srcDir)
 				needsToBuild = false
 				nextBuild = time.Now().Add(time.Second * 2)
 			}
@@ -226,9 +222,9 @@ func watchApp() {
 	}
 }
 
-func buildAndRunApp() {
+func buildAndRunApp(srcDir string) {
 	// Build before we kill the existing one
-	err := buildApp()
+	err := buildApp(srcDir)
 	if err != nil {
 		fmt.Printf("Build error: %v\n", err)
 		return
@@ -239,5 +235,5 @@ func buildAndRunApp() {
 		<-doneChannel
 	}
 
-	runApp()
+	runApp(srcDir)
 }
