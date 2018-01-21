@@ -214,7 +214,7 @@ func watchApp() {
 			if needsToBuild && time.Now().After(nextBuild) {
 				buildAndRunApp()
 				needsToBuild = false
-				nextBuild = time.Now().Add(time.Second * 3)
+				nextBuild = time.Now().Add(time.Second * 2)
 			}
 			// Sleep so we don't thrash too much
 			time.Sleep(time.Millisecond * 200)

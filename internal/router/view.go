@@ -14,6 +14,10 @@ type View struct {
 }
 
 func (v *View) Status() int {
+	if v.status == 0 {
+		return 200
+	}
+
 	return v.status
 }
 
