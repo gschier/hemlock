@@ -19,31 +19,36 @@ type router struct {
 func NewRouter(app *hemlock.Application) *router {
 	root := chi.NewRouter()
 
-	// TODO: Make middleware configurable
 	root.Use(middleware.Recoverer)
 	root.Use(middleware.DefaultCompress)
 	root.Use(middleware.CloseNotify)
-	root.Use(middleware.Logger)
 	root.Use(middleware.RedirectSlashes)
-	root.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ext := filepath.Ext(r.URL.Path)
-			if ext == ".css" || ext == ".js" {
-				w.Header().Add("Cache-Control", "public, max-age=31536000")
-			}
-			next.ServeHTTP(w, r)
-		})
-	})
-	root.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("X-Forwarded-Proto") == "http" {
-				newUrl := "https://" + r.Host + r.URL.String()
-				http.Redirect(w, r, newUrl, http.StatusFound)
-			} else {
+
+	if app.Config.Env == "development" {
+		root.Use(middleware.Logger)
+	}
+
+	if app.Config.Env == "production" {
+		root.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ext := filepath.Ext(r.URL.Path)
+				if ext == ".css" || ext == ".js" {
+					w.Header().Add("Cache-Control", "public, max-age=31536000")
+				}
 				next.ServeHTTP(w, r)
-			}
+			})
 		})
-	})
+		root.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("X-Forwarded-Proto") == "http" {
+					newUrl := "https://" + r.Host + r.URL.String()
+					http.Redirect(w, r, newUrl, http.StatusFound)
+				} else {
+					next.ServeHTTP(w, r)
+				}
+			})
+		})
+	}
 
 	router := &router{root: root, app: app}
 	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.Result {

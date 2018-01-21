@@ -12,8 +12,8 @@ type Config struct {
 }
 
 type HTTPConfig struct {
-	Host string
-	Port string
+	Host    string
+	Port    string
 }
 
 type DatabaseConfig struct {
