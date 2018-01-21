@@ -1,6 +1,7 @@
 package router
 
 import (
+	middleware2 "github.com/getinsomnia/api/http/middleware"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
@@ -24,6 +25,16 @@ func NewRouter(app *hemlock.Application) *router {
 	root.Use(middleware.CloseNotify)
 	root.Use(middleware.Logger)
 	root.Use(middleware.RedirectSlashes)
+	root.Use(func (next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("X-Forwarded-Proto") == "http" {
+				newUrl := "https://" + r.Host + r.URL.String()
+				http.Redirect(w, r, newUrl, http.StatusFound)
+			} else {
+				next.ServeHTTP(w, r)
+			}
+		})
+	})
 
 	router := &router{root: root, app: app}
 	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.View {
