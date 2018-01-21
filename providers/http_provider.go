@@ -6,7 +6,6 @@ import (
 	"github.com/gschier/hemlock/interfaces"
 	"log"
 	"net/http"
-	"time"
 )
 
 type HttpProvider struct{}
@@ -15,7 +14,7 @@ func (p *HttpProvider) Register(c interfaces.Container) {
 	// Nothing yet
 }
 
-func (p *HttpProvider) Boot(app *hemlock.Application) {
+func (p *HttpProvider) Boot(app *hemlock.Application) error {
 	var router interfaces.Router
 	app.Resolve(&router)
 
@@ -24,10 +23,11 @@ func (p *HttpProvider) Boot(app *hemlock.Application) {
 		Addr:    app.Config.HTTP.Host + ":" + app.Config.HTTP.Port,
 	}
 
-	go func() {
-		<- time.NewTimer(time.Second * 1).C
+	go func () {
 		fmt.Printf("Started server at %v\n", srv.Addr)
 	}()
 
 	log.Fatal(srv.ListenAndServe())
+
+	return nil
 }

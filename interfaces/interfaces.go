@@ -41,15 +41,14 @@ type Request interface {
 type Response interface {
 	Cookie(name, value string) Response
 	Status(status int) Response
-	Template(name string, data interface{}) Response
+	Render(name, base string, data interface{}) Response
 	Data(data interface{}) Response
 	Dataf(format string, a ...interface{}) Response
-	View() View
+	End() Result
 }
 
-type View interface {
-	Status() int
-	Write(w io.Writer)
+type Result interface {
+	Response() Response
 }
 
 type Router interface {
@@ -67,4 +66,4 @@ type Router interface {
 // Callback is a function that takes injected arguments
 type Callback interface{}
 
-type Middleware func(req Request, res Response, next func(req Request, res Response) View) View
+type Middleware func(req Request, res Response, next func(req Request, res Response) Result) Result

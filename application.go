@@ -2,7 +2,12 @@ package hemlock
 
 import (
 	"context"
+	"fmt"
 	"github.com/gschier/hemlock/internal/container"
+	"log"
+	"os"
+	"path/filepath"
+	"reflect"
 )
 
 type Application struct {
@@ -26,12 +31,19 @@ func NewApplication(config *Config, providers []Provider) *Application {
 
 	// Add providers from config
 	for _, p := range providers {
+		name := reflect.TypeOf(p).Elem().Name()
 		p.Register(app.container)
+		fmt.Printf("[app] Registered %s\n", name)
 	}
 
 	// Boot all providers
 	for _, p := range providers {
-		p.Boot(app)
+		err := p.Boot(app)
+		name := reflect.TypeOf(p).Elem().Name()
+		if err != nil {
+			log.Panicf("Failed to boot %s: %v\n", name, err)
+		}
+		fmt.Printf("[app] Booted %s\n", name)
 	}
 
 	return app
@@ -57,6 +69,16 @@ func (a *Application) Singleton(fn interface{}) {
 
 func (a *Application) Instance(v interface{}) {
 	a.container.Instance(v)
+}
+
+func (a *Application) ResolveDir(elem ...string) string {
+	cwd, _ := os.Getwd()
+	newElem := make([]string, len(elem) + 1)
+	newElem[0] = cwd
+	for i, e := range elem {
+		newElem[i+1] = e
+	}
+	return filepath.Join(newElem...)
 }
 
 func (a *Application) ResolveInto(fn interface{}, extraArgs ...interface{}) []interface{} {

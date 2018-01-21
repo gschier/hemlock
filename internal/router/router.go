@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
+	"github.com/gschier/hemlock/internal/templates"
 	"net/http"
-	"strings"
 )
 
 type router struct {
@@ -24,7 +24,7 @@ func NewRouter(app *hemlock.Application) *router {
 	root.Use(middleware.CloseNotify)
 	root.Use(middleware.Logger)
 	root.Use(middleware.RedirectSlashes)
-	root.Use(func (next http.Handler) http.Handler {
+	root.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("X-Forwarded-Proto") == "http" {
 				newUrl := "https://" + r.Host + r.URL.String()
@@ -36,8 +36,8 @@ func NewRouter(app *hemlock.Application) *router {
 	})
 
 	router := &router{root: root, app: app}
-	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.View {
-		return res.Data("Not Found").Status(404).View()
+	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.Result {
+		return res.Data("Not Found").Status(404).End()
 	}))
 	return router
 }
@@ -80,13 +80,13 @@ func (router *router) Use(m interfaces.Middleware) {
 func (router *router) Handler() http.Handler {
 	return router.root
 }
-func (router *router) callNext(i int, req interfaces.Request, res interfaces.Response) interfaces.View {
+func (router *router) callNext(i int, req interfaces.Request, res interfaces.Response) interfaces.Result {
 	if i == len(router.middlewares) {
 		return nil
 	}
 
-	middleware := router.middlewares[i]
-	view := middleware(req, res, func(newReq interfaces.Request, newRes interfaces.Response) interfaces.View {
+	fn := router.middlewares[i]
+	view := fn(req, res, func(newReq interfaces.Request, newRes interfaces.Response) interfaces.Result {
 		return router.callNext(i+1, newReq, newRes)
 	})
 
@@ -97,44 +97,40 @@ func (router *router) addRoute(method string, pattern string, callback interface
 	router.root.MethodFunc(method, pattern, router.serve(callback))
 }
 
-func (router *router) serve (callback interface{}) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
+func (router *router) serve(callback interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var renderer templates.Renderer
+		router.app.Resolve(&renderer)
+
 		req := newRequest(r)
-		res := newResponse(w)
+		res := newResponse(w, r, &renderer)
 
-		view := router.callNext(0, req, res)
+		result := router.callNext(0, req, res)
 
-		if view == nil {
-			newApp := hemlock.CloneApplication(router.app)
-			newApp.Instance(req)
-			newApp.Instance(res)
-
-			c := chi.RouteContext(r.Context())
-			extraArgs := make([]interface{}, len(c.URLParams.Values))
-			for i, v := range c.URLParams.Values {
-				extraArgs[i] = v
-			}
-
-			results := newApp.ResolveInto(callback, extraArgs...)
-			if len(results) != 1 {
-				panic("Route did not return a value. Got " + string(len(results)))
-			}
-
-			var ok bool
-			view, ok = results[0].(interfaces.View)
-			if !ok {
-				panic("Route did not return View instance")
-			}
+		// The middleware sent a response so we're done
+		if result != nil {
+			return
 		}
 
-		if strings.HasSuffix(r.URL.Path, ".js") {
-			w.Header().Add("Content-Type", "application/javascript")
-		} else if strings.HasSuffix(r.URL.Path, ".css") {
-			w.Header().Add("Content-Type", "text/css")
-		} else {
-			w.Header().Add("Content-Type", "text/html")
+		newApp := hemlock.CloneApplication(router.app)
+		newApp.Instance(req)
+		newApp.Instance(res)
+
+		c := chi.RouteContext(r.Context())
+		extraArgs := make([]interface{}, len(c.URLParams.Values))
+		for i, v := range c.URLParams.Values {
+			extraArgs[i] = v
 		}
-		w.WriteHeader(view.Status())
-		view.Write(w)
+
+		results := newApp.ResolveInto(callback, extraArgs...)
+		if len(results) != 1 {
+			panic("Route did not return a value. Got " + string(len(results)))
+		}
+
+		var ok bool
+		result, ok = results[0].(interfaces.Result)
+		if !ok {
+			panic("Route did not return View instance")
+		}
 	}
 }

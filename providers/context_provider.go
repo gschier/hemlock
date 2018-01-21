@@ -16,6 +16,6 @@ func (p *ContextProvider) Register(c interfaces.Container) {
 	})
 }
 
-func (p *ContextProvider) Boot(app *hemlock.Application) {
-	// Nothing yet
+func (p *ContextProvider) Boot(app *hemlock.Application) error {
+	return nil
 }

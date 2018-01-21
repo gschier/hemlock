@@ -14,6 +14,6 @@ func (p *RouteServiceProvider) Register(c interfaces.Container) {
 	})
 }
 
-func (p *RouteServiceProvider) Boot(*hemlock.Application) {
-	// Nothing
+func (p *RouteServiceProvider) Boot(*hemlock.Application) error {
+	return nil
 }
