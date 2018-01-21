@@ -58,19 +58,17 @@ func (r *Renderer) Load() error {
 	return nil
 }
 
-func (r *Renderer) RenderTemplate(w io.Writer, name, layout string, data interface{}) error {
-	templateName := name + ".html"
-	layoutName := layout + ".html"
-	if _, ok := r.templates[templateName]; !ok {
-		return errors.New("Template not found: " + name)
+func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
+	if _, ok := r.templates[template]; !ok {
+		return errors.New("Template not found: " + template)
 	}
 
-	t, ok := r.templates[templateName][layoutName]
+	t, ok := r.templates[template][layout]
 	if !ok {
 		return errors.New("Layout not found: " + layout)
 	}
 
-	return t.ExecuteTemplate(w, layoutName, data)
+	return t.ExecuteTemplate(w, layout, data)
 }
 
 func (r *Renderer) findTemplates(dirs ...string) ([]string, error) {
