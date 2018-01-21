@@ -29,6 +29,11 @@ func NewApplication(config *Config, providers []Provider) *Application {
 	app.Instance(app)
 	app.Instance(app.Config)
 
+	// Add config Extra
+	for _, c := range app.Config.Extra {
+		app.Instance(c)
+	}
+
 	// Add providers from config
 	for _, p := range providers {
 		name := reflect.TypeOf(p).Elem().Name()
