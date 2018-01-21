@@ -9,7 +9,7 @@ import (
 type TemplatesProvider struct{}
 
 func (p *TemplatesProvider) Register(c interfaces.Container) {
-	c.Bind(func(app *hemlock.Application) (*templates.Renderer, error) {
+	c.Singleton(func(app *hemlock.Application) (*templates.Renderer, error) {
 		dir := app.ResolveDir(app.Config.TemplatesDirectory)
 		return templates.NewRenderer(dir), nil
 	})
