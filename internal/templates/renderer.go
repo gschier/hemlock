@@ -42,7 +42,8 @@ func (r *Renderer) Load() error {
 		templateName := filepath.Base(templatePath)
 		r.templates[templateName] = map[string]*template.Template{}
 		for _, layoutPath := range layoutPaths {
-			paths := append(partialPaths, templatePath, layoutPath)
+			// NOTE: Layout must be parsed before template so {{ block }} defaults work
+			paths := append(partialPaths, layoutPath, templatePath)
 			t, err := template.ParseFiles(paths...)
 			if err != nil {
 				return err
@@ -60,12 +61,12 @@ func (r *Renderer) Load() error {
 
 func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
 	if _, ok := r.templates[template]; !ok {
-		return errors.New("Template not found: " + template)
+		return errors.New(fmt.Sprintf("Template (%s) not found. Options %#v", template, r.templates))
 	}
 
 	t, ok := r.templates[template][layout]
 	if !ok {
-		return errors.New("Layout not found: " + layout)
+		return errors.New(fmt.Sprintf("Layout (%s) not found. Options %#v", layout, r.templates[template]))
 	}
 
 	return t.ExecuteTemplate(w, layout, data)

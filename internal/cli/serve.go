@@ -193,6 +193,10 @@ func watchApp() {
 					watchableDirs = append(watchableDirs, path)
 					break
 				}
+				if strings.HasSuffix(thing.Name(), ".html") {
+					watchableDirs = append(watchableDirs, path)
+					break
+				}
 			}
 		}
 
