@@ -19,7 +19,7 @@ func (p *TemplatesProvider) Boot(app *hemlock.Application) error {
 	var renderer templates.Renderer
 	app.Resolve(&renderer)
 
-	err := renderer.Load()
+	err := renderer.Init()
 	if err != nil {
 		return err
 	}

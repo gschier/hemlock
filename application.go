@@ -83,15 +83,19 @@ func App() *Application {
 }
 
 func (a *Application) Start() {
-	var server http.Server
-	var router interfaces.Router
-	a.Resolve(&server, &router)
+	var r interfaces.Router
+	a.Resolve(&r)
+
+	// TODO: Move this into a provider
+	server := &http.Server{
+		Addr: a.Config.HTTP.Host + ":" + a.Config.HTTP.Port,
+		Handler: r.Handler(),
+	}
 
 	go func() {
 		fmt.Printf("Started server at %v\n", server.Addr)
 	}()
 
-	server.Handler = router.Handler()
 	log.Fatal(server.ListenAndServe())
 }
 

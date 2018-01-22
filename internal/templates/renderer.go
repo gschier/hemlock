@@ -15,12 +15,10 @@ type Renderer struct {
 }
 
 func NewRenderer(root string) *Renderer {
-	r := &Renderer{root: root}
-	r.Load()
-	return r
+	return &Renderer{root: root}
 }
 
-func (r *Renderer) Load() error {
+func (r *Renderer) Init() error {
 	templatePaths, err := r.findTemplates(r.root)
 	if err != nil {
 		return err
@@ -41,15 +39,27 @@ func (r *Renderer) Load() error {
 	for _, templatePath := range templatePaths {
 		templateName := filepath.Base(templatePath)
 		r.templates[templateName] = map[string]*template.Template{}
-		for _, layoutPath := range layoutPaths {
-			// NOTE: Layout must be parsed before template so {{ block }} defaults work
-			paths := append(partialPaths, layoutPath, templatePath)
+		for _, layoutPath := range append(layoutPaths, "") {
+			var paths []string
+			if layoutPath == "" {
+				paths = append(partialPaths, templatePath)
+			} else {
+				// NOTE: Layout must be parsed before template so {{ block }} defaults work
+				paths = append(partialPaths, layoutPath, templatePath)
+			}
+
 			t, err := template.ParseFiles(paths...)
 			if err != nil {
 				return err
 			}
 
-			layoutName := filepath.Base(layoutPath)
+			var layoutName string
+			if layoutPath == "" {
+				layoutName = ""
+			} else {
+				layoutName = filepath.Base(layoutPath)
+			}
+
 			r.templates[templateName][layoutName] = t
 		}
 	}
@@ -69,7 +79,11 @@ func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data int
 		return errors.New(fmt.Sprintf("Layout (%s) not found. Options %#v", layout, r.templates[template]))
 	}
 
-	return t.ExecuteTemplate(w, layout, data)
+	if layout == "" {
+		return t.ExecuteTemplate(w, template, data)
+	} else {
+		return t.ExecuteTemplate(w, layout, data)
+	}
 }
 
 func (r *Renderer) findTemplates(dirs ...string) ([]string, error) {

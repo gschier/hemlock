@@ -22,11 +22,11 @@ type Request interface {
 	// URL returns the URL of the request
 	URL() *url.URL
 
-	// Input grabs input from the request body by name
-	Input(name string) string
-
 	// Input grabs input from the query string by name
 	Query(name string) string
+
+	// Input grabs input from the query string by name
+	QueryInt(name string) int
 
 	// Cookie grabs input from cookies by name
 	Cookie(name string) string
@@ -39,8 +39,9 @@ type Request interface {
 }
 
 type Response interface {
-	Cookie(name, value string) Response
+	Cookie(cookie *http.Cookie) Response
 	Status(status int) Response
+	Header(name, value string) Response
 	Render(name, base string, data interface{}) Response
 	Data(data interface{}) Response
 	Dataf(format string, a ...interface{}) Response
@@ -59,11 +60,17 @@ type Router interface {
 	Patch(uri string, callback Callback)
 	Delete(uri string, callback Callback)
 	Options(uri string, callback Callback)
-	Use(Middleware)
+	Any(uri string, callback Callback)
+	Match(methods []string, uri string, callback Callback)
+	Use(...Middleware)
+	With(...Middleware) Router
+
+	// TODO: Make this private
 	Handler() http.Handler
 }
 
 // Callback is a function that takes injected arguments
 type Callback interface{}
 
-type Middleware func(req Request, res Response, next func(req Request, res Response) Result) Result
+type Next func(req Request, res Response) Result
+type Middleware func(req Request, res Response, next Next) Result

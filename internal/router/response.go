@@ -6,7 +6,6 @@ import (
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -26,9 +25,8 @@ func newResponse(w http.ResponseWriter, r *http.Request, renderer *templates.Ren
 	}
 }
 
-func (res *Response) Cookie(name, value string) interfaces.Response {
-	c := &http.Cookie{Name: name, Value: value}
-	http.SetCookie(res.w, c)
+func (res *Response) Cookie(cookie *http.Cookie) interfaces.Response {
+	http.SetCookie(res.w, cookie)
 	return res
 }
 
@@ -57,8 +55,14 @@ func (res *Response) Data(data interface{}) interfaces.Response {
 		res.w.Write(v)
 	} else if v, ok := data.(io.Reader); ok {
 		io.Copy(res.w, v)
+	} else if v, ok := data.(error); ok {
+		fmt.Printf("Error: %v\n", v)
+		// TODO: Check if status already written
+		res.w.WriteHeader(http.StatusInternalServerError)
+		res.w.Write([]byte("Internal Server Error"))
 	} else {
-		log.Panicf("Unknown response type: %#v\n", data)
+		v := []byte(fmt.Sprintf("%v", data))
+		res.w.Write(v)
 	}
 
 	// Remember this the next time
@@ -69,6 +73,11 @@ func (res *Response) Data(data interface{}) interfaces.Response {
 
 func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response {
 	return res.Data(fmt.Sprintf(format, a...))
+}
+
+func (res *Response) Header(name, value string) interfaces.Response {
+	res.w.Header().Set(name, value)
+	return res
 }
 
 func (res *Response) End() interfaces.Result {
