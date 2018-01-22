@@ -3,12 +3,16 @@ package hemlock
 import (
 	"context"
 	"fmt"
+	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/container"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 )
+
+var globalAppInstance *Application
 
 type Application struct {
 	Config    *Config
@@ -17,9 +21,16 @@ type Application struct {
 }
 
 func NewApplication(config *Config, providers []Provider) *Application {
+	if globalAppInstance != nil {
+		panic("Hemlock application already started")
+	}
+
 	app := &Application{
 		Config: config,
 	}
+
+	// Cache the app instance globally for easy access
+	globalAppInstance = app
 
 	// Ensure all constructors take in *Application as an argument
 	serviceConstructorArgs := []interface{}{app}
@@ -64,6 +75,26 @@ func CloneApplication(app *Application) *Application {
 	return app
 }
 
+func App() *Application {
+	if globalAppInstance == nil {
+		panic("Application not started yet")
+	}
+	return globalAppInstance
+}
+
+func (a *Application) Start() {
+	var server http.Server
+	var router interfaces.Router
+	a.Resolve(&server, &router)
+
+	go func() {
+		fmt.Printf("Started server at %v\n", server.Addr)
+	}()
+
+	server.Handler = router.Handler()
+	log.Fatal(server.ListenAndServe())
+}
+
 func (a *Application) Bind(fn interface{}) {
 	a.container.Bind(fn)
 }
@@ -78,7 +109,7 @@ func (a *Application) Instance(v interface{}) {
 
 func (a *Application) ResolveDir(elem ...string) string {
 	cwd, _ := os.Getwd()
-	newElem := make([]string, len(elem) + 1)
+	newElem := make([]string, len(elem)+1)
 	newElem[0] = cwd
 	for i, e := range elem {
 		newElem[i+1] = e
@@ -94,8 +125,10 @@ func (a *Application) Make(i interface{}) interface{} {
 	return a.container.Make(i)
 }
 
-func (a *Application) Resolve(v interface{}) {
-	a.container.Resolve(v)
+func (a *Application) Resolve(v ...interface{}) {
+	for i := 0; i < len(v); i++ {
+		a.container.Resolve(v[i])
+	}
 }
 
 func (a *Application) Env(name string) string {

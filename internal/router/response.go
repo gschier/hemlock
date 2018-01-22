@@ -88,9 +88,13 @@ func (res *Response) setContentTypeHeader() {
 }
 
 func (res *Response) getRenderContext (data interface{}) interface{} {
+	var config hemlock.Config
+	hemlock.App().Resolve(&config)
+
 	return map[string]interface{}{
 		"URL": res.r.URL.Path,
 		"Page": data,
 		"CacheBustKey": hemlock.CacheBustKey,
+		"Production": strings.ToLower(config.Env) == "production",
 	}
 }
