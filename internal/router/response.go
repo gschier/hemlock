@@ -80,6 +80,11 @@ func (res *Response) Header(name, value string) interfaces.Response {
 	return res
 }
 
+func (res *Response) Redirect(uri string, code int) interfaces.Result {
+	http.Redirect(res.w, res.r, uri, code)
+	return res.End()
+}
+
 func (res *Response) End() interfaces.Result {
 	return &Result{res: res}
 }

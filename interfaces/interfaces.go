@@ -45,6 +45,8 @@ type Response interface {
 	Render(name, base string, data interface{}) Response
 	Data(data interface{}) Response
 	Dataf(format string, a ...interface{}) Response
+
+	Redirect(uri string, code int) Result
 	End() Result
 }
 
