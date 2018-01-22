@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 )
 
 type Renderer struct {
@@ -15,7 +16,9 @@ type Renderer struct {
 }
 
 func NewRenderer(root string) *Renderer {
-	return &Renderer{root: root}
+	r := &Renderer{root: root}
+	r.Init()
+	return r
 }
 
 func (r *Renderer) Init() error {
@@ -71,7 +74,12 @@ func (r *Renderer) Init() error {
 
 func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
 	if _, ok := r.templates[template]; !ok {
-		return errors.New(fmt.Sprintf("Template (%s) not found. Options %#v", template, r.templates))
+		templates := make([]string, 0)
+		for name := range r.templates {
+			templates = append(templates, name)
+		}
+		options := strings.Join(templates, ", ")
+		return errors.New(fmt.Sprintf("Template (%s) not found. Options %#v", template, options))
 	}
 
 	t, ok := r.templates[template][layout]

@@ -16,13 +16,5 @@ func (p *TemplatesProvider) Register(c interfaces.Container) {
 }
 
 func (p *TemplatesProvider) Boot(app *hemlock.Application) error {
-	var renderer templates.Renderer
-	app.Resolve(&renderer)
-
-	err := renderer.Init()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
