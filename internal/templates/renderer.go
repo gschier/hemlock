@@ -1,8 +1,8 @@
 package templates
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"html/template"
 	"io"
 	"io/ioutil"
