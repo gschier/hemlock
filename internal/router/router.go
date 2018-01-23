@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
@@ -157,7 +156,6 @@ func (router *Router) wrap(callback interface{}) http.HandlerFunc {
 			append(
 				router.middlewares,
 				func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
-					fmt.Printf("Static: %v\n", req.URL().Path)
 					newApp := hemlock.CloneApplication(router.app)
 					newApp.Instance(req)
 					newApp.Instance(res)
