@@ -6,19 +6,19 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
 type Renderer struct {
 	root      string
+	funcs     template.FuncMap
 	templates map[string]map[string]*template.Template
 }
 
-func NewRenderer(root string) *Renderer {
-	r := &Renderer{root: root}
-	r.Init()
-	return r
+func NewRenderer(root string, funcs template.FuncMap) *Renderer {
+	return &Renderer{root: root, funcs: funcs}
 }
 
 func (r *Renderer) Init() error {
@@ -51,7 +51,8 @@ func (r *Renderer) Init() error {
 				paths = append(partialPaths, layoutPath, templatePath)
 			}
 
-			t, err := template.ParseFiles(paths...)
+			t, err := template.New("").Funcs(r.funcs).ParseFiles(paths...)
+
 			if err != nil {
 				return err
 			}
@@ -73,13 +74,17 @@ func (r *Renderer) Init() error {
 }
 
 func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
+	if len(r.templates) == 0 {
+		return errors.New(fmt.Sprintf("No templates found in %s", r.root))
+	}
+
 	if _, ok := r.templates[template]; !ok {
 		templates := make([]string, 0)
 		for name := range r.templates {
 			templates = append(templates, name)
 		}
 		options := strings.Join(templates, ", ")
-		return errors.New(fmt.Sprintf("Template (%s) not found. Options %#v", template, options))
+		return errors.New(fmt.Sprintf("Template not found '%s'. Options are %s", template, options))
 	}
 
 	t, ok := r.templates[template][layout]
@@ -96,6 +101,10 @@ func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data int
 
 func (r *Renderer) findTemplates(dirs ...string) ([]string, error) {
 	dir := filepath.Join(dirs...)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return make([]string, 0), nil
+	}
+
 	fileInfo, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err

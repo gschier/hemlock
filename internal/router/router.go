@@ -1,19 +1,22 @@
 package router
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
 type Router struct {
-	app         *hemlock.Application
-	root        chi.Router
-	middlewares []interfaces.Middleware
+	app              *hemlock.Application
+	root             chi.Router
+	middlewares      []interfaces.Middleware
+	enderMiddlewares []interfaces.Middleware
 }
 
 func NewRouter(app *hemlock.Application) *Router {
@@ -50,11 +53,23 @@ func NewRouter(app *hemlock.Application) *Router {
 		})
 	}
 
-	router := &Router{root: root, app: app}
-	router.root.NotFound(router.serve(func(req interfaces.Request, res interfaces.Response) interfaces.Result {
-		return res.Data("Not Found").Status(404).End()
-	}))
-	return router
+	// Static files
+	root.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			cwd, _ := os.Getwd()
+			fullPath := filepath.Join(cwd, app.Config.PublicDirectory, path)
+			s, err := os.Stat(fullPath)
+			if err != nil || s.IsDir() {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			http.ServeFile(w, r, fullPath)
+		})
+	})
+
+	return &Router{root: root, app: app}
 }
 
 func (router *Router) Redirect(uri, to string, code int) {
@@ -111,30 +126,18 @@ func (router *Router) With(m ...interfaces.Middleware) interfaces.Router {
 func (router *Router) Handler() http.Handler {
 	return router.root
 }
-func (router *Router) callNext(i int, req interfaces.Request, res interfaces.Response) interfaces.Result {
-	if i == len(router.middlewares) {
-		return nil
-	}
-
-	fn := router.middlewares[i]
-	view := fn(req, res, func(newReq interfaces.Request, newRes interfaces.Response) interfaces.Result {
-		return router.callNext(i+1, newReq, newRes)
-	})
-
-	return view
-}
 
 func (router *Router) addRoute(methods []string, pattern string, callback interface{}) {
 	if len(methods) == 0 {
-		router.root.HandleFunc(pattern, router.serve(callback))
+		router.root.HandleFunc(pattern, router.wrap(callback))
 	}
 
 	for _, m := range methods {
-		router.root.MethodFunc(m, pattern, router.serve(callback))
+		router.root.MethodFunc(m, pattern, router.wrap(callback))
 	}
 }
 
-func (router *Router) serve(callback interface{}) http.HandlerFunc {
+func (router *Router) wrap(callback interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var renderer templates.Renderer
 		router.app.Resolve(&renderer)
@@ -142,32 +145,63 @@ func (router *Router) serve(callback interface{}) http.HandlerFunc {
 		req := newRequest(r)
 		res := newResponse(w, r, &renderer)
 
-		result := router.callNext(0, req, res)
+		var result interfaces.Result
 
-		// The middleware sent a response so we're done
-		if result != nil {
-			return
+		// Call pre-middleware
+		if result == nil {
+			result = nextMiddleware(router.middlewares, 0, req, res)
 		}
 
-		newApp := hemlock.CloneApplication(router.app)
-		newApp.Instance(req)
-		newApp.Instance(res)
+		// Call the route itself
+		nextMiddleware(
+			append(
+				router.middlewares,
+				func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+					fmt.Printf("Static: %v\n", req.URL().Path)
+					newApp := hemlock.CloneApplication(router.app)
+					newApp.Instance(req)
+					newApp.Instance(res)
 
-		c := chi.RouteContext(r.Context())
-		extraArgs := make([]interface{}, len(c.URLParams.Values))
-		for i, v := range c.URLParams.Values {
-			extraArgs[i] = v
-		}
+					c := chi.RouteContext(r.Context())
+					extraArgs := make([]interface{}, len(c.URLParams.Values))
+					for i, v := range c.URLParams.Values {
+						extraArgs[i] = v
+					}
 
-		results := newApp.ResolveInto(callback, extraArgs...)
-		if len(results) != 1 {
-			panic("Route did not return a value. Got " + string(len(results)))
-		}
+					results := newApp.ResolveInto(callback, extraArgs...)
+					if len(results) != 1 {
+						panic("Route did not return a value. Got " + string(len(results)))
+					}
 
-		var ok bool
-		result, ok = results[0].(interfaces.Result)
-		if !ok {
-			panic("Route did not return View instance")
-		}
+					result = results[0].(interfaces.Result)
+					if result != nil {
+						return result
+					}
+
+					return next(req, res)
+				},
+				func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+					if v := next(req, res); v != nil {
+						return v
+					}
+					return res.Data("Not Found").Status(404).End()
+				},
+			),
+			0,
+			req,
+			res,
+		)
 	}
+}
+
+func nextMiddleware(middlewares []interfaces.Middleware, i int, req interfaces.Request, res interfaces.Response) interfaces.Result {
+	if i == len(middlewares) {
+		return nil
+	}
+
+	next := func(newReq interfaces.Request, newRes interfaces.Response) interfaces.Result {
+		return nextMiddleware(middlewares, i+1, newReq, newRes)
+	}
+
+	return middlewares[i](req, res, next)
 }

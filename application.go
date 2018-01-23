@@ -111,7 +111,7 @@ func (a *Application) Instance(v interface{}) {
 	a.container.Instance(v)
 }
 
-func (a *Application) ResolveDir(elem ...string) string {
+func (a *Application) Dir(elem ...string) string {
 	cwd, _ := os.Getwd()
 	newElem := make([]string, len(elem)+1)
 	newElem[0] = cwd

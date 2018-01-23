@@ -6,6 +6,7 @@ import (
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -39,7 +40,7 @@ func (res *Response) Render(name, base string, data interface{}) interfaces.Resp
 	ctx := res.getRenderContext(data)
 	err := res.renderer.RenderTemplate(res.w, name, base, ctx)
 	if err != nil {
-		panic("Failed to render: " + err.Error())
+		log.Panicf("Failed to render: %v", err)
 	}
 	return res
 }
@@ -106,6 +107,10 @@ func (res *Response) getRenderContext (data interface{}) interface{} {
 	hemlock.App().Resolve(&config)
 
 	return map[string]interface{}{
+		"App": map[string]string{
+			"Name": config.Name,
+			"URL": config.URL,
+		},
 		"URL": res.r.URL.Path,
 		"Page": data,
 		"CacheBustKey": hemlock.CacheBustKey,
