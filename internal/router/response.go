@@ -12,7 +12,7 @@ import (
 )
 
 type Response struct {
-	w              http.ResponseWriter
+	W              http.ResponseWriter
 	r              *http.Request
 	renderer       *templates.Renderer
 	hasWrittenData bool
@@ -20,25 +20,25 @@ type Response struct {
 
 func newResponse(w http.ResponseWriter, r *http.Request, renderer *templates.Renderer) interfaces.Response {
 	return &Response{
-		w:        w,
+		W:        w,
 		r:        r,
 		renderer: renderer,
 	}
 }
 
 func (res *Response) Cookie(cookie *http.Cookie) interfaces.Response {
-	http.SetCookie(res.w, cookie)
+	http.SetCookie(res.W, cookie)
 	return res
 }
 
 func (res *Response) Status(status int) interfaces.Response {
-	res.w.WriteHeader(status)
+	res.W.WriteHeader(status)
 	return res
 }
 
 func (res *Response) Render(name, base string, data interface{}) interfaces.Response {
 	ctx := res.getRenderContext(data)
-	err := res.renderer.RenderTemplate(res.w, name, base, ctx)
+	err := res.renderer.RenderTemplate(res.W, name, base, ctx)
 	if err != nil {
 		log.Panicf("Failed to render: %v", err)
 	}
@@ -51,19 +51,19 @@ func (res *Response) Data(data interface{}) interfaces.Response {
 	}
 
 	if v, ok := data.(string); ok {
-		res.w.Write([]byte(v))
+		res.W.Write([]byte(v))
 	} else if v, ok := data.([]byte); ok {
-		res.w.Write(v)
+		res.W.Write(v)
 	} else if v, ok := data.(io.Reader); ok {
-		io.Copy(res.w, v)
+		io.Copy(res.W, v)
 	} else if v, ok := data.(error); ok {
 		fmt.Printf("Error: %v\n", v)
 		// TODO: Check if status already written
-		res.w.WriteHeader(http.StatusInternalServerError)
-		res.w.Write([]byte("Internal Server Error"))
+		res.W.WriteHeader(http.StatusInternalServerError)
+		res.W.Write([]byte("Internal Server Error"))
 	} else {
 		v := []byte(fmt.Sprintf("%v", data))
-		res.w.Write(v)
+		res.W.Write(v)
 	}
 
 	// Remember this the next time
@@ -77,13 +77,19 @@ func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response 
 }
 
 func (res *Response) Header(name, value string) interfaces.Response {
-	res.w.Header().Set(name, value)
+	res.W.Header().Set(name, value)
 	return res
 }
 
 func (res *Response) Redirect(uri string, code int) interfaces.Result {
-	http.Redirect(res.w, res.r, uri, code)
+	http.Redirect(res.W, res.r, uri, code)
 	return res.End()
+}
+
+func (res *Response) RedirectRoute(name string, code int) interfaces.Result {
+	var r interfaces.Router
+	hemlock.App().Resolve(&r)
+	return res.Redirect(r.URL(name, nil), code)
 }
 
 func (res *Response) End() interfaces.Result {
@@ -91,7 +97,7 @@ func (res *Response) End() interfaces.Result {
 }
 
 func (res *Response) setContentTypeHeader() {
-	w := res.w
+	w := res.W
 	r := res.r
 	if strings.HasSuffix(r.URL.Path, ".js") {
 		w.Header().Add("Content-Type", "application/javascript")

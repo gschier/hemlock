@@ -6,14 +6,15 @@ type Config struct {
 	URL                string
 	TemplatesDirectory string
 	PublicDirectory    string
+	AssetBase          string
 	Database           *DatabaseConfig
 	HTTP               *HTTPConfig
 	Extra              []interface{}
 }
 
 type HTTPConfig struct {
-	Host    string
-	Port    string
+	Host string
+	Port string
 }
 
 type DatabaseConfig struct {

@@ -9,19 +9,19 @@ import (
 )
 
 type Request struct {
-	r *http.Request
+	R *http.Request
 }
 
 func newRequest(r *http.Request) *Request {
-	return &Request{r: r}
+	return &Request{R: r}
 }
 
 func (req *Request) URL() *url.URL {
-	return req.r.URL
+	return req.R.URL
 }
 
 func (req *Request) Query(name string) string {
-	return req.r.URL.Query().Get(name)
+	return req.R.URL.Query().Get(name)
 }
 
 func (req *Request) QueryInt(name string) int {
@@ -41,5 +41,5 @@ func (req *Request) File(name string) io.Reader {
 }
 
 func (req *Request) Context() context.Context {
-	return req.r.Context()
+	return req.R.Context()
 }

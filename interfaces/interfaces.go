@@ -47,6 +47,7 @@ type Response interface {
 	Dataf(format string, a ...interface{}) Response
 
 	Redirect(uri string, code int) Result
+	RedirectRoute(name string, code int) Result
 	End() Result
 }
 
@@ -55,20 +56,35 @@ type Result interface {
 }
 
 type Router interface {
-	Redirect(uri, to string, code int)
-	Get(uri string, callback Callback)
-	Post(uri string, callback Callback)
-	Put(uri string, callback Callback)
-	Patch(uri string, callback Callback)
-	Delete(uri string, callback Callback)
-	Options(uri string, callback Callback)
-	Any(uri string, callback Callback)
-	Match(methods []string, uri string, callback Callback)
+	Redirect(uri, to string, code int) Route
+	Get(uri string, callback Callback) Route
+	Post(uri string, callback Callback) Route
+	Put(uri string, callback Callback) Route
+	Patch(uri string, callback Callback) Route
+	Delete(uri string, callback Callback) Route
+	Options(uri string, callback Callback) Route
+	Any(uri string, callback Callback) Route
+	Match(methods []string, uri string, callback Callback) Route
+
+	// Use appends middleware to the chain
 	Use(...Middleware)
+
+	// Prefix returns a new router instance for the provided URI
+	Prefix(uri string, fn func(Router))
+
+	// Group
 	With(...Middleware) Router
+
+	// URL Returns a URL based on an assigned route name
+	URL(name string, params map[string]string) string
 
 	// TODO: Make this private
 	Handler() http.Handler
+}
+
+type Route interface {
+	// Name assigns a name to the route for referencing
+	Name(name string) Route
 }
 
 // Callback is a function that takes injected arguments

@@ -22,7 +22,7 @@ func NewRenderer(root string, funcs template.FuncMap) *Renderer {
 }
 
 func (r *Renderer) Init() error {
-	templatePaths, err := r.findTemplates(r.root)
+	templatePaths, err := r.findTemplates(r.root, "views")
 	if err != nil {
 		return err
 	}
