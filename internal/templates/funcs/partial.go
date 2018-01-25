@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 )
 
-func fnPartial (name string, data interface{}) template.HTML {
+func fnPartial (name string, data ...interface{}) template.HTML {
 	app := hemlock.App()
 	var renderer templates.Renderer
 	app.Resolve(&renderer)
@@ -19,8 +19,13 @@ func fnPartial (name string, data interface{}) template.HTML {
 		panic(err)
 	}
 
+	var d interface{} = nil
+	if len(data) > 0 {
+		d = data[0]
+	}
+
 	var w bytes.Buffer
-	err = renderer.RenderString(&w, string(content), data)
+	err = renderer.RenderString(&w, string(content), d)
 	if err != nil {
 		panic(err)
 	}
