@@ -1,7 +1,29 @@
 package funcs
 
-import "html/template"
+import (
+	"bytes"
+	"github.com/gschier/hemlock"
+	"github.com/gschier/hemlock/internal/templates"
+	"html/template"
+	"io/ioutil"
+)
 
-func fnPartial (name string, parameters ...interface{}) template.HTML {
-	return ""
+func fnPartial (name string, data interface{}) template.HTML {
+	app := hemlock.App()
+	var renderer templates.Renderer
+	app.Resolve(&renderer)
+
+	partialPath := app.Path(app.Config.TemplatesDirectory, "partials", name)
+	content, err := ioutil.ReadFile(partialPath)
+	if err != nil {
+		panic(err)
+	}
+
+	var w bytes.Buffer
+	err = renderer.RenderString(&w, string(content), data)
+	if err != nil {
+		panic(err)
+	}
+
+	return template.HTML(w.String())
 }

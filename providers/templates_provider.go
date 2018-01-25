@@ -11,7 +11,7 @@ type TemplatesProvider struct{}
 
 func (p *TemplatesProvider) Register(c interfaces.Container) {
 	c.Singleton(func(app *hemlock.Application) (*templates.Renderer, error) {
-		dir := app.Dir(app.Config.TemplatesDirectory)
+		dir := app.Path(app.Config.TemplatesDirectory)
 
 		var fm template.FuncMap
 		app.Resolve(&fm)

@@ -47,9 +47,9 @@ func NewApplication(config *Config, providers []Provider) *Application {
 
 	// Add providers from config
 	for _, p := range providers {
-		name := reflect.TypeOf(p).Elem().Name()
 		p.Register(app.container)
-		fmt.Printf("[app] Registered %s\n", name)
+		//name := reflect.TypeOf(p).Elem().Name()
+		//fmt.Printf("[app] Registered %s\n", name)
 	}
 
 	// Boot all providers
@@ -59,7 +59,7 @@ func NewApplication(config *Config, providers []Provider) *Application {
 		if err != nil {
 			log.Panicf("Failed to boot %s: %v\n", name, err)
 		}
-		fmt.Printf("[app] Booted %s\n", name)
+		//fmt.Printf("[app] Booted %s\n", name)
 	}
 
 	return app
@@ -111,7 +111,8 @@ func (a *Application) Instance(v interface{}) {
 	a.container.Instance(v)
 }
 
-func (a *Application) Dir(elem ...string) string {
+// Path resolves an absolute path
+func (a *Application) Path(elem ...string) string {
 	cwd, _ := os.Getwd()
 	newElem := make([]string, len(elem)+1)
 	newElem[0] = cwd

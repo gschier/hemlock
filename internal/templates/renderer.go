@@ -73,6 +73,15 @@ func (r *Renderer) Init() error {
 	return nil
 }
 
+func (r *Renderer) RenderString(w io.Writer, html string, data interface{}) error {
+	t, err := template.New("").Funcs(r.funcs).Parse(html)
+	if err != nil {
+		return err
+	}
+
+	return t.Execute(w, data)
+}
+
 func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
 	if len(r.templates) == 0 {
 		return errors.New(fmt.Sprintf("No templates found in %s", r.root))

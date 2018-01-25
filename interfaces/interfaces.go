@@ -7,6 +7,7 @@ import (
 	"net/url"
 )
 
+// Container is used to bind objects to the application
 type Container interface {
 	// Bind binds the type of v as a dependency
 	Bind(fn interface{})
@@ -18,6 +19,7 @@ type Container interface {
 	Instance(i interface{})
 }
 
+// Response is used to retrieve data from an HTTP request
 type Request interface {
 	// URL returns the URL of the request
 	URL() *url.URL
@@ -38,16 +40,36 @@ type Request interface {
 	Context() context.Context
 }
 
+// Response is be used to send data to the client
 type Response interface {
+	// Cookie sets an HTTP cookie on the response
 	Cookie(cookie *http.Cookie) Response
-	Status(status int) Response
-	Header(name, value string) Response
-	Render(name, base string, data interface{}) Response
-	Data(data interface{}) Response
-	Dataf(format string, a ...interface{}) Response
 
+	// Status sets the HTTP status code of the response. This can only be called once.
+	Status(status int) Response
+
+	// Header adds an HTTP header to the response
+	Header(name, value string) Response
+
+	// Data responds with data provided
+	//
+	// Most types will converted to a string representation except structs,
+	// which will be serialized to JSON.
+	Data(data interface{}) Response
+
+	// Sprintf builds a response using `fmt.Sprintf`
+	Sprintf(format string, a ...interface{}) Response
+
+	// View renders a view for the response with a provided layout and data
+	View(name, layout string, data interface{}) Result
+
+	// Redirect redirects the client to a URL
 	Redirect(uri string, code int) Result
+
+	// RedirectRoute is the same as Redirect but looks up a URL from a route name
 	RedirectRoute(name string, code int) Result
+
+	// End ends the response chain
 	End() Result
 }
 
@@ -55,7 +77,9 @@ type Result interface {
 	Response() Response
 }
 
+// Router provides the ability to define HTTP routes
 type Router interface {
+	// Redirect creates a static redirect route for the provided URI
 	Redirect(uri, to string, code int) Route
 	Get(uri string, callback Callback) Route
 	Post(uri string, callback Callback) Route
@@ -82,6 +106,7 @@ type Router interface {
 	Handler() http.Handler
 }
 
+// Route represents an HTTP route
 type Route interface {
 	// Name assigns a name to the route for referencing
 	Name(name string) Route
@@ -90,5 +115,8 @@ type Route interface {
 // Callback is a function that takes injected arguments
 type Callback interface{}
 
+// Next is called to continue the chain of  middleware
 type Next func(req Request, res Response) Result
+
+// Middleware is an interface for adding middleware to a Router instance
 type Middleware func(req Request, res Response, next Next) Result

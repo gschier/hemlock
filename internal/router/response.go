@@ -36,13 +36,13 @@ func (res *Response) Status(status int) interfaces.Response {
 	return res
 }
 
-func (res *Response) Render(name, base string, data interface{}) interfaces.Response {
+func (res *Response) View(view, layout string, data interface{}) interfaces.Result {
 	ctx := res.getRenderContext(data)
-	err := res.renderer.RenderTemplate(res.W, name, base, ctx)
+	err := res.renderer.RenderTemplate(res.W, view, layout, ctx)
 	if err != nil {
 		log.Panicf("Failed to render: %v", err)
 	}
-	return res
+	return res.End()
 }
 
 func (res *Response) Data(data interface{}) interfaces.Response {
@@ -72,7 +72,7 @@ func (res *Response) Data(data interface{}) interfaces.Response {
 	return res
 }
 
-func (res *Response) Dataf(format string, a ...interface{}) interfaces.Response {
+func (res *Response) Sprintf(format string, a ...interface{}) interfaces.Response {
 	return res.Data(fmt.Sprintf(format, a...))
 }
 
@@ -117,8 +117,8 @@ func (res *Response) getRenderContext (data interface{}) interface{} {
 			"Name": config.Name,
 			"URL": config.URL,
 		},
-		"URL": res.r.URL.Path,
 		"Page": data,
+		"URL": res.r.URL.Path,
 		"CacheBustKey": hemlock.CacheBustKey,
 		"Production": strings.ToLower(config.Env) == "production",
 	}
