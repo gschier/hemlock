@@ -21,10 +21,6 @@ type Application struct {
 }
 
 func NewApplication(config *Config, providers []Provider) *Application {
-	if globalAppInstance != nil {
-		panic("Hemlock application already started")
-	}
-
 	app := &Application{
 		Config: config,
 	}

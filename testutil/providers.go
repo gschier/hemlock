@@ -35,8 +35,8 @@ func (csp *CarServiceProvider) Register(ioc interfaces.Container) {
 	})
 }
 
-func (csp *CarServiceProvider) Boot(app *hemlock.Application) {
-	// Nothing yet
+func (csp *CarServiceProvider) Boot(app *hemlock.Application) error {
+	return nil
 }
 
 type StringServiceProvider struct{}
@@ -47,6 +47,6 @@ func (ssp *StringServiceProvider) Register(ioc interfaces.Container) {
 	})
 }
 
-func (ssp *StringServiceProvider) Boot(app *hemlock.Application) {
-	// Nothing yet
+func (ssp *StringServiceProvider) Boot(app *hemlock.Application) error {
+	return nil
 }

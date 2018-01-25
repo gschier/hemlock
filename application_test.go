@@ -10,7 +10,10 @@ import (
 
 func TestApplication_Call(t *testing.T) {
 	os.Setenv("honk", "Env Honk!")
-	app := NewTestApplication(new(CarServiceProvider), new(StringServiceProvider))
+	app := NewTestApplication(
+		new(CarServiceProvider),
+		new(StringServiceProvider),
+	)
 
 	app.ResolveInto(func(c CarServiceInterface, s string) {
 		assert.IsType(t, &CarService{}, c, "Should be a car type")
