@@ -18,8 +18,14 @@ func NewRoute(router *Router, route *mux.Route) *Route {
 }
 
 func (r *Route) Redirect(uri, to string, code int) interfaces.Route {
-	return r.assignCallback(nil, uri, func(res interfaces.Response, req interfaces.Request) interfaces.Result {
+	return r.assignCallback(nil, uri, func(res interfaces.Response) interfaces.Result {
 		return res.Redirect(to, code)
+	})
+}
+
+func (r *Route) View(uri, view, layout string, data interface{}) interfaces.Route {
+	return r.Get(uri, func(res interfaces.Response) interfaces.Result {
+		return res.View(view, layout, data)
 	})
 }
 
@@ -45,6 +51,18 @@ func (r *Route) Delete(uri string, callback interfaces.Callback) interfaces.Rout
 
 func (r *Route) Options(uri string, callback interfaces.Callback) interfaces.Route {
 	return r.assignCallback([]string{http.MethodOptions}, uri, callback)
+}
+
+func (r *Route) Head(uri string, callback interfaces.Callback) interfaces.Route {
+	return r.assignCallback([]string{http.MethodHead}, uri, callback)
+}
+
+func (r *Route) Connect(uri string, callback interfaces.Callback) interfaces.Route {
+	return r.assignCallback([]string{http.MethodConnect}, uri, callback)
+}
+
+func (r *Route) Trace(uri string, callback interfaces.Callback) interfaces.Route {
+	return r.assignCallback([]string{http.MethodTrace}, uri, callback)
 }
 
 func (r *Route) Any(uri string, callback interfaces.Callback) interfaces.Route {
@@ -89,7 +107,7 @@ func (r *Route) wrap(callback interface{}) http.HandlerFunc {
 		r.router.app.Resolve(&renderer)
 
 		req := newRequest(r2)
-		res := newResponse(w, r2, &renderer)
+		res := newResponse(w, r2, &renderer, r.router)
 
 		newApp := hemlock.CloneApplication(r.router.app)
 		newApp.Instance(req)

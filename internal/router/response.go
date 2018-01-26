@@ -1,16 +1,9 @@
 package router
 
 import (
-	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
-	"io"
-	"log"
 	"net/http"
-	"net/url"
-	"strings"
 )
 
 type Response struct {
@@ -18,13 +11,24 @@ type Response struct {
 	r              *http.Request
 	renderer       *templates.Renderer
 	hasWrittenData bool
+	router         *Router
+
+	status  int
+	headers *http.Header
 }
 
-func newResponse(w http.ResponseWriter, r *http.Request, renderer *templates.Renderer) interfaces.Response {
+func newResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	renderer *templates.Renderer,
+	router *Router,
+) interfaces.Response {
 	return &Response{
 		W:        w,
 		r:        r,
 		renderer: renderer,
+		router:   router,
+		status:   200,
 	}
 }
 
@@ -34,48 +38,12 @@ func (res *Response) Cookie(cookie *http.Cookie) interfaces.Response {
 }
 
 func (res *Response) Status(status int) interfaces.Response {
-	res.W.WriteHeader(status)
+	// In a regular Go server, headers cannot be added after calling the
+	// WriteHeader(statusCode) method. To make it more user-friendly, we cache
+	// status and write it lazily when the body is written or the response is
+	// ended.
+	res.status = status
 	return res
-}
-
-func (res *Response) View(view, layout string, data interface{}) interfaces.Result {
-	ctx := res.getRenderContext(data)
-	err := res.renderer.RenderTemplate(res.W, view, layout, ctx)
-	if err != nil {
-		log.Panicf("Failed to render: %v", err)
-	}
-	return res.End()
-}
-
-func (res *Response) Data(data interface{}) interfaces.Response {
-	if !res.hasWrittenData {
-		res.setContentTypeHeader()
-	}
-
-	if v, ok := data.(string); ok {
-		res.W.Write([]byte(v))
-	} else if v, ok := data.([]byte); ok {
-		res.W.Write(v)
-	} else if v, ok := data.(io.Reader); ok {
-		io.Copy(res.W, v)
-	} else if v, ok := data.(error); ok {
-		fmt.Printf("Error: %v\n", v)
-		// TODO: Check if status already written
-		res.W.WriteHeader(http.StatusInternalServerError)
-		res.W.Write([]byte("Internal Server Error"))
-	} else {
-		v := []byte(fmt.Sprintf("%v", data))
-		res.W.Write(v)
-	}
-
-	// Remember this the next time
-	res.hasWrittenData = true
-
-	return res
-}
-
-func (res *Response) Sprintf(format string, a ...interface{}) interfaces.Response {
-	return res.Data(fmt.Sprintf(format, a...))
 }
 
 func (res *Response) Header(name, value string) interfaces.Response {
@@ -83,54 +51,34 @@ func (res *Response) Header(name, value string) interfaces.Response {
 	return res
 }
 
+func (res *Response) View(name, layout string, data interface{}) interfaces.Result {
+	return res.newResult().View(name, layout, data)
+}
+
+func (res *Response) Data(data interface{}) interfaces.Result {
+	return res.newResult().Data(data)
+}
+
+func (res *Response) Error(err error) interfaces.Result {
+	return res.newResult().Error(err)
+}
+
+func (res *Response) Sprintf(format string, a ...interface{}) interfaces.Result {
+	return res.newResult().Sprintf(format, a...)
+}
+
 func (res *Response) Redirect(uri string, code int) interfaces.Result {
-	http.Redirect(res.W, res.r, uri, code)
-	return res.End()
+	return res.newResult().Redirect(uri, code)
 }
 
 func (res *Response) RedirectRoute(name string, params map[string]string, code int) interfaces.Result {
-	var r interfaces.Router
-	hemlock.App().Resolve(&r)
-	return res.Redirect(r.Route(name, params), code)
+	return res.newResult().RedirectRoute(name, params, code)
 }
 
 func (res *Response) End() interfaces.Result {
-	return &Result{res: res}
+	return res.newResult()
 }
 
-func (res *Response) setContentTypeHeader() {
-	w := res.W
-	r := res.r
-	if strings.HasSuffix(r.URL.Path, ".js") {
-		w.Header().Add("Content-Type", "application/javascript")
-	} else if strings.HasSuffix(r.URL.Path, ".css") {
-		w.Header().Add("Content-Type", "text/css")
-	} else {
-		w.Header().Add("Content-Type", "text/html")
-	}
-}
-
-func (res *Response) getRenderContext(data interface{}) interface{} {
-	var config hemlock.Config
-	var router interfaces.Router
-	hemlock.App().Resolve(&config, &router)
-	fmt.Printf("URL: %#v\n", res.r.URL)
-
-	u, _ := url.Parse(config.URL)
-	u.Path = res.r.URL.Path
-
-	return map[string]interface{}{
-		"App": map[string]string{
-			"Name": config.Name,
-			"URL":  config.URL,
-		},
-		"Page":         data,
-		"CacheBustKey": hemlock.CacheBustKey,
-		"Production":   strings.ToLower(config.Env) == "production",
-		"Request": map[string]string{
-			"URL":   u.String(),
-			"Path":  res.r.URL.Path,
-			"Route": mux.CurrentRoute(res.r).GetName(),
-		},
-	}
+func (res *Response) newResult() interfaces.Result {
+	return newResult(res.W, res.r, res.status, res.renderer, res.router)
 }

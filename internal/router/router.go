@@ -76,7 +76,7 @@ func NewRouter(app *hemlock.Application) *Router {
 		var renderer templates.Renderer
 		router.app.Resolve(&renderer)
 		req := newRequest(r)
-		res := newResponse(w, r, &renderer)
+		res := newResponse(w, r, &renderer, router)
 		result := nextMiddleware(router.middlewares, 0, req, res)
 		if result == nil {
 			router.mux.ServeHTTP(w, r)
@@ -88,6 +88,10 @@ func NewRouter(app *hemlock.Application) *Router {
 
 func (router *Router) Redirect(uri, to string, code int) interfaces.Route {
 	return router.newRoute().Redirect(uri, to, code)
+}
+
+func (router *Router) View(uri, view, layout string, data interface{}) interfaces.Route {
+	return router.newRoute().View(uri, view, layout, data)
 }
 
 func (router *Router) Get(uri string, callback interfaces.Callback) interfaces.Route {
@@ -112,6 +116,18 @@ func (router *Router) Delete(uri string, callback interfaces.Callback) interface
 
 func (router *Router) Options(uri string, callback interfaces.Callback) interfaces.Route {
 	return router.newRoute().Options(uri, callback)
+}
+
+func (router *Router) Head(uri string, callback interfaces.Callback) interfaces.Route {
+	return router.newRoute().Head(uri, callback)
+}
+
+func (router *Router) Connect(uri string, callback interfaces.Callback) interfaces.Route {
+	return router.newRoute().Connect(uri, callback)
+}
+
+func (router *Router) Trace(uri string, callback interfaces.Callback) interfaces.Route {
+	return router.newRoute().Trace(uri, callback)
 }
 
 func (router *Router) Any(uri string, callback interfaces.Callback) interfaces.Route {

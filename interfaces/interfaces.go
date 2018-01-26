@@ -55,10 +55,13 @@ type Response interface {
 	//
 	// Most types will converted to a string representation except structs,
 	// which will be serialized to JSON.
-	Data(data interface{}) Response
+	Data(data interface{}) Result
+
+	// Error sends the default 500 response and logs the error message
+	Error(error) Result
 
 	// Sprintf builds a response using `fmt.Sprintf`
-	Sprintf(format string, a ...interface{}) Response
+	Sprintf(format string, a ...interface{}) Result
 
 	// View renders a view for the response with a provided layout and data
 	View(name, layout string, data interface{}) Result
@@ -74,14 +77,18 @@ type Response interface {
 }
 
 type Result interface {
-	Response() Response
+	Data(data interface{}) Result
+	Error(error) Result
+	Sprintf(format string, a ...interface{}) Result
+	View(name, layout string, data interface{}) Result
+	Redirect(uri string, code int) Result
+	RedirectRoute(name string, params map[string]string, code int) Result
 }
 
 // Router provides the ability to define HTTP routes
 type Router interface {
-	// Redirect creates a static redirect route for the provided URI
-	Redirect(uri, to string, code int) Route
 	Get(uri string, callback Callback) Route
+	Head(uri string, callback Callback) Route
 	Post(uri string, callback Callback) Route
 	Put(uri string, callback Callback) Route
 	Patch(uri string, callback Callback) Route
@@ -89,6 +96,12 @@ type Router interface {
 	Options(uri string, callback Callback) Route
 	Any(uri string, callback Callback) Route
 	Match(methods []string, uri string, callback Callback) Route
+
+	// Redirect creates a static redirect route for the provided URI
+	Redirect(uri, to string, code int) Route
+
+	// View creates a route
+	View(uri, view, layout string, data interface{}) Route
 
 	// Prefix resolves new Route instance for the provided URI
 	Prefix(uri string) Route
@@ -125,15 +138,19 @@ type RouteParams map[string]string
 
 // Route represents an HTTP route
 type Route interface {
-	Redirect(uri, to string, code int) Route
 	Get(uri string, callback Callback) Route
 	Post(uri string, callback Callback) Route
 	Put(uri string, callback Callback) Route
 	Patch(uri string, callback Callback) Route
 	Delete(uri string, callback Callback) Route
 	Options(uri string, callback Callback) Route
+	Head(uri string, callback Callback) Route
+	Connect(uri string, callback Callback) Route
+	Trace(uri string, callback Callback) Route
 	Any(uri string, callback Callback) Route
 	Match(methods []string, uri string, callback Callback) Route
+
+	Redirect(uri, to string, code int) Route
 
 	// Name assigns a name to the route for referencing
 	Name(name string) Route
