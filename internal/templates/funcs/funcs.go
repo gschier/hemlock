@@ -3,7 +3,8 @@ package funcs
 import "html/template"
 
 var Funcs = template.FuncMap{
-	"asset": fnAsset,
-	"url": fnURL,
-	"partial": fnPartial,
+	"asset": asset,
+	"url": url,
+	"partial": partial,
+	"route": route,
 }

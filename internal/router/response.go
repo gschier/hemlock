@@ -2,12 +2,14 @@ package router
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/gschier/hemlock"
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -86,10 +88,10 @@ func (res *Response) Redirect(uri string, code int) interfaces.Result {
 	return res.End()
 }
 
-func (res *Response) RedirectRoute(name string, code int) interfaces.Result {
+func (res *Response) RedirectRoute(name string, params map[string]string, code int) interfaces.Result {
 	var r interfaces.Router
 	hemlock.App().Resolve(&r)
-	return res.Redirect(r.URL(name, nil), code)
+	return res.Redirect(r.Route(name, params), code)
 }
 
 func (res *Response) End() interfaces.Result {
@@ -108,18 +110,27 @@ func (res *Response) setContentTypeHeader() {
 	}
 }
 
-func (res *Response) getRenderContext (data interface{}) interface{} {
+func (res *Response) getRenderContext(data interface{}) interface{} {
 	var config hemlock.Config
-	hemlock.App().Resolve(&config)
+	var router interfaces.Router
+	hemlock.App().Resolve(&config, &router)
+	fmt.Printf("URL: %#v\n", res.r.URL)
+
+	u, _ := url.Parse(config.URL)
+	u.Path = res.r.URL.Path
 
 	return map[string]interface{}{
 		"App": map[string]string{
 			"Name": config.Name,
-			"URL": config.URL,
+			"URL":  config.URL,
 		},
-		"Page": data,
-		"URL": res.r.URL.Path,
+		"Page":         data,
 		"CacheBustKey": hemlock.CacheBustKey,
-		"Production": strings.ToLower(config.Env) == "production",
+		"Production":   strings.ToLower(config.Env) == "production",
+		"Request": map[string]string{
+			"URL":   u.String(),
+			"Path":  res.r.URL.Path,
+			"Route": mux.CurrentRoute(res.r).GetName(),
+		},
 	}
 }

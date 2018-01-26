@@ -67,7 +67,7 @@ type Response interface {
 	Redirect(uri string, code int) Result
 
 	// RedirectRoute is the same as Redirect but looks up a URL from a route name
-	RedirectRoute(name string, code int) Result
+	RedirectRoute(name string, params map[string]string, code int) Result
 
 	// End ends the response chain
 	End() Result
@@ -90,26 +90,58 @@ type Router interface {
 	Any(uri string, callback Callback) Route
 	Match(methods []string, uri string, callback Callback) Route
 
-	// Use appends middleware to the chain
+	// Prefix resolves new Route instance for the provided URI
+	Prefix(uri string) Route
+
+	// Host resolves a new Route instance for the provided Host
+	//
+	// For example:
+	//
+	//     r.Host("www.example.com", func (r *hemlock.Router) { ... })
+	//     r.Host("{subdomain}.domain.com", func (r *hemlock.Router) { ... }))
+	//     r.Host("{subdomain:[a-z]+}.domain.com", func (r *hemlock.Router) { ... }))
+	Host(uri string) Route
+
+	// With returns a new Router with middleware applied
+	//
+	// For example:
+	//
+	//     admin := r.With(adminMiddleware)
+	//	   admin.Get("/admin", adminDashboard)
+	With(...Middleware) Route
 	Use(...Middleware)
 
-	// Prefix returns a new router instance for the provided URI
-	Prefix(uri string, fn func(Router))
+	// URL returns a URL based on an assigned route name
+	URL(path string) string
 
-	// Group
-	With(...Middleware) Router
-
-	// URL Returns a URL based on an assigned route name
-	URL(name string, params map[string]string) string
+	// Route resolves a URL from a route name combined with parameters
+	Route(name string, params RouteParams) string
 
 	// TODO: Make this private
 	Handler() http.Handler
 }
 
+type RouteParams map[string]string
+
 // Route represents an HTTP route
 type Route interface {
+	Redirect(uri, to string, code int) Route
+	Get(uri string, callback Callback) Route
+	Post(uri string, callback Callback) Route
+	Put(uri string, callback Callback) Route
+	Patch(uri string, callback Callback) Route
+	Delete(uri string, callback Callback) Route
+	Options(uri string, callback Callback) Route
+	Any(uri string, callback Callback) Route
+	Match(methods []string, uri string, callback Callback) Route
+
 	// Name assigns a name to the route for referencing
 	Name(name string) Route
+	Host(uri string) Route
+	Prefix(uri string) Route
+	Group(func(Router))
+	With(...Middleware) Route
+	Use(...Middleware)
 }
 
 // Callback is a function that takes injected arguments

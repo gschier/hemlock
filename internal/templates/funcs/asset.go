@@ -4,18 +4,18 @@ import (
 	"github.com/gschier/hemlock"
 	"html/template"
 	"log"
-	"net/url"
+	url2 "net/url"
 	"path"
 	"strings"
 )
 
-func fnAsset(name string) template.URL {
+func asset(name string) template.URL {
 	app := hemlock.App()
 	base := app.Config.URL
 	assetBase := app.Config.AssetBase
 	fullURL := name
 	if strings.Contains(base, "://") {
-		u, err := url.Parse(app.Config.URL)
+		u, err := url2.Parse(app.Config.URL)
 		if err != nil {
 			log.Panicf("Invalid App URL: %s", base)
 		}

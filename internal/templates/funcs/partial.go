@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 )
 
-func fnPartial (name string, data ...interface{}) template.HTML {
+func partial (name string, data ...interface{}) template.HTML {
 	app := hemlock.App()
 	var renderer templates.Renderer
 	app.Resolve(&renderer)

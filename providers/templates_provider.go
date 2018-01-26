@@ -27,6 +27,6 @@ func (p *TemplatesProvider) Register(c interfaces.Container) {
 	})
 }
 
-func (p *TemplatesProvider) Boot(app *hemlock.Application) error {
+func (p *TemplatesProvider) Boot(a *hemlock.Application) error {
 	return nil
 }
