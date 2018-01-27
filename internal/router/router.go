@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gschier/hemlock"
@@ -30,6 +31,10 @@ type Router struct {
 func NewRouter(app *hemlock.Application) *Router {
 	router := &Router{app: app, mux: mux.NewRouter()}
 
+	// Redirect slashes
+	router.mux.StrictSlash(true)
+
+	// This needs to be first
 	if !app.IsDev() {
 		router.UseG(handlers.RecoveryHandler())
 	}
@@ -45,27 +50,54 @@ func NewRouter(app *hemlock.Application) *Router {
 
 	if !app.IsDev() {
 		// Add caching middleware
-		router.UseG(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ext := filepath.Ext(r.URL.Path)
-				if ext == ".css" || ext == ".js" {
-					w.Header().Add("Cache-Control", "public, max-age=7200")
-				}
-				next.ServeHTTP(w, r)
-			})
+		router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+			ext := filepath.Ext(req.Path())
+			if ext == ".css" || ext == ".js" {
+				res.Header("Cache-Control", "public, max-age=7200")
+			}
+			return next(req, res)
 		})
 		// Add HTTP redirect middleware
-		router.UseG(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Header.Get("X-Forwarded-Proto") == "http" {
-					newUrl := "https://" + r.Host + r.URL.String()
-					http.Redirect(w, r, newUrl, http.StatusFound)
-				} else {
-					next.ServeHTTP(w, r)
-				}
-			})
+		router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+			if req.Header("X-Forwarded-Proto") == "http" {
+				newUrl := "https://" + req.Host() + req.URL().String()
+				return res.Redirect(newUrl, http.StatusFound)
+			} else {
+				return next(req, res)
+			}
 		})
 	}
+
+	// Redirect trailing slashes
+	router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+		fmt.Printf("HELLO? %s\n", req.Path())
+		p := req.Path()
+		if p != "/" && strings.HasSuffix(p, "/") {
+			req.URL().Path = strings.TrimSuffix(req.URL().Path, "/")
+			return res.Redirect(req.URL().String(), http.StatusFound)
+		}
+		return next(req, res)
+	})
+
+	router.UseG(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("HELLO FROM LEGACY\n")
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// Add main handler to call middleware
+	fmt.Printf("0\n")
+	router.mux.Use(func(next http.Handler) http.Handler {
+		fmt.Printf("1\n")
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("2\n")
+			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
+				fmt.Printf("3\n")
+				next.ServeHTTP(w2, r2)
+			})
+		})
+	})
 
 	// Add static handler
 	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
@@ -82,15 +114,6 @@ func NewRouter(app *hemlock.Application) *Router {
 			return res.Data(f)
 		},
 	)
-
-	// Add main handler to call middleware
-	router.mux.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
-				next.ServeHTTP(w2, r2)
-			})
-		})
-	})
 
 	return router
 }

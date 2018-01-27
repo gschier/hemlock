@@ -184,7 +184,7 @@ func (r *Result) setContentType(contentType string) {
 }
 
 func (r *Result) defaultContentType(contentType string) {
-	if r.hasContentType() {
+	if !r.hasContentType() {
 		r.setContentType(contentType)
 	}
 }

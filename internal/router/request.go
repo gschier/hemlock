@@ -22,6 +22,14 @@ func (req *Request) URL() *url.URL {
 	return req.R.URL
 }
 
+func (req *Request) Header(name string) string {
+	return req.R.Header.Get(name)
+}
+
+func (req *Request) Host() string {
+	return req.R.Host
+}
+
 func (req *Request) Path() string {
 	return req.R.URL.Path
 }

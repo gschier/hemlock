@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Container is used to bind objects to the application
@@ -25,6 +26,16 @@ type Request interface {
 
 	// Path returns the path of the current URL
 	Path() string
+
+	// URL returns the raw URL
+	URL() *url.URL
+
+	// Header return a header value by name. If the header is not found
+	// an empty string will be returned.
+	Header(name string) string
+
+	// Host returns the host of the request.
+	Host() string
 
 	// Input grabs input from the query string by name
 	Query(name string) string
