@@ -123,7 +123,7 @@ func (r *Result) Data(data interface{}) interfaces.Result {
 func (r *Result) getRenderContext(data interface{}) interface{} {
 	var config hemlock.Config
 	var router interfaces.Router
-	hemlock.App().Resolve(&config, &router)
+	r.router.app.Resolve(&config, &router)
 
 	u, _ := url.Parse(config.URL)
 	u.Path = r.r.URL.Path

@@ -6,8 +6,10 @@ import (
 	"html/template"
 )
 
-func url(path string) template.URL {
-	var router interfaces.Router
-	hemlock.App().Resolve(&router)
-	return template.URL(router.URL(path))
+func url(app *hemlock.Application) interface{} {
+	return func(path string) template.URL {
+		var router interfaces.Router
+		app.Resolve(&router)
+		return template.URL(router.URL(path))
+	}
 }

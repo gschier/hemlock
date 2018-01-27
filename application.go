@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var globalAppInstance *Application
-
 type Application struct {
 	Config    *Config
 	container *container.Container
@@ -37,9 +35,6 @@ func NewApplication(config *Config, providers []Provider) *Application {
 	app := &Application{
 		Config: config,
 	}
-
-	// Cache the app instance globally for easy access
-	globalAppInstance = app
 
 	// Ensure all constructors take in *Application as an argument
 	serviceConstructorArgs := []interface{}{app}
@@ -82,13 +77,6 @@ func CloneApplication(app *Application) *Application {
 	newApp.container = container.Clone(app.container, serviceConstructorArgs)
 
 	return app
-}
-
-func App() *Application {
-	if globalAppInstance == nil {
-		panic("Application not started yet")
-	}
-	return globalAppInstance
 }
 
 func (a *Application) Start() {

@@ -6,15 +6,16 @@ import (
 	"html/template"
 )
 
-func partial (name string, data ...interface{}) template.HTML {
-	app := hemlock.App()
-	var renderer templates.Renderer
-	app.Resolve(&renderer)
+func partial(app *hemlock.Application) interface{} {
+	return func(name string, data ...interface{}) template.HTML {
+		var renderer templates.Renderer
+		app.Resolve(&renderer)
 
-	var renderData interface{}
-	if len(data) > 0 {
-		renderData = data[0]
+		var renderData interface{}
+		if len(data) > 0 {
+			renderData = data[0]
+		}
+
+		return template.HTML(renderer.RenderPartial(name, renderData))
 	}
-
-	return template.HTML(renderer.RenderPartial(name, renderData))
 }

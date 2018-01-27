@@ -11,7 +11,7 @@ type TemplateFuncsProvider struct{}
 
 func (p *TemplateFuncsProvider) Register(c interfaces.Container) {
 	c.Bind(func(app *hemlock.Application) (*template.FuncMap, error) {
-		return &funcs.Funcs, nil
+		return funcs.Funcs(app), nil
 	})
 }
 

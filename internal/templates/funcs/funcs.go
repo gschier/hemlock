@@ -1,10 +1,16 @@
 package funcs
 
-import "html/template"
+import (
+	"github.com/gschier/hemlock"
+	"html/template"
+)
 
-var Funcs = template.FuncMap{
-	"asset": asset,
-	"url": url,
-	"partial": partial,
-	"route": route,
+func Funcs (app *hemlock.Application) *template.FuncMap {
+	return &template.FuncMap{
+		"asset": asset(app),
+		"url": url(app),
+		"partial": partial(app),
+		"route": route(app),
+	}
 }
+
