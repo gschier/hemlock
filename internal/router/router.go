@@ -29,7 +29,7 @@ type Router struct {
 func NewRouter(app *hemlock.Application) *Router {
 	router := &Router{app: app, mux: mux.NewRouter()}
 
-	router.UseG(handlers.RecoveryHandler())
+	//router.UseG(handlers.RecoveryHandler())
 	router.UseG(handlers.CompressHandler)
 
 	// Add logging middleware
@@ -67,8 +67,8 @@ func NewRouter(app *hemlock.Application) *Router {
 	router.mux.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			router.setupURLs()
-			router.nextCombinedMiddleware(0, w, r, func(w http.ResponseWriter, r *http.Request) {
-				next.ServeHTTP(w, r)
+			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
+				next.ServeHTTP(w2, r2)
 			})
 		})
 	})

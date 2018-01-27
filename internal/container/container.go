@@ -6,42 +6,39 @@ import (
 )
 
 type Container struct {
-	registered             map[reflect.Type]*serviceWrapper
+	registered             []*serviceWrapper
 	serviceConstructorArgs []interface{}
 }
 
 func New(serviceConstructorArgs []interface{}) *Container {
 	return &Container{
-		registered:             make(map[reflect.Type]*serviceWrapper),
+		registered:             make([]*serviceWrapper, 0),
 		serviceConstructorArgs: serviceConstructorArgs,
 	}
 }
 
-// Bind binds the type of v as a dependency
 func Clone(c *Container, serviceConstructorArgs []interface{}) *Container {
 	newContainer := New(serviceConstructorArgs)
-	for t, sw := range c.registered {
-		newContainer.registered[t] = sw
-	}
+	copy(newContainer.registered, c.registered)
 	return newContainer
 }
 
 // Bind binds the type of v as a dependency
 func (c *Container) Bind(fn interface{}) {
 	w := newServiceWrapper(fn, false, c.serviceConstructorArgs)
-	c.registered[w.instanceType] = w
+	c.registered = append(c.registered, w)
 }
 
 // Singleton binds the type of v as a dependency. Will only get instantiated once
 func (c *Container) Singleton(fn interface{}) {
 	w := newServiceWrapper(fn, true, c.serviceConstructorArgs)
-	c.registered[w.instanceType] = w
+	c.registered = append(c.registered, w)
 }
 
 // Instance binds an already-created value as a dependency
 func (c *Container) Instance(i interface{}) {
 	w := newServiceWrapperInstance(i, true)
-	c.registered[w.instanceType] = w
+	c.registered = append(c.registered, w)
 }
 
 func (c *Container) Make(i interface{}) interface{} {

@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,9 +13,10 @@ import (
 )
 
 type Renderer struct {
-	root      string
-	funcs     template.FuncMap
-	templates map[string]map[string]*template.Template
+	root     string
+	funcs    template.FuncMap
+	views    map[string]map[string]*template.Template
+	partials map[string]*template.Template
 }
 
 func NewRenderer(root string, funcs template.FuncMap) *Renderer {
@@ -32,43 +34,63 @@ func (r *Renderer) Init() error {
 		return err
 	}
 
-	partialPaths, err := r.findTemplates(r.root, "partials")
-	if err != nil {
-		return err
-	}
-
-	// Create all possible combinations of templates to bases
-	r.templates = map[string]map[string]*template.Template{}
+	// Create all possible combinations of views to bases
+	r.views = map[string]map[string]*template.Template{}
 	for _, templatePath := range templatePaths {
-		templateName := filepath.Base(templatePath)
-		r.templates[templateName] = map[string]*template.Template{}
+		viewName := strings.TrimPrefix(templatePath, filepath.Join(r.root, "views")+"/")
+		r.views[viewName] = map[string]*template.Template{}
 		for _, layoutPath := range append(layoutPaths, "") {
-			var paths []string
+			var (
+				layoutName string
+				t          *template.Template
+				err        error
+			)
+
 			if layoutPath == "" {
-				paths = append(partialPaths, templatePath)
+				layoutName = ""
+				t, err = template.New("").Funcs(r.funcs).ParseFiles(templatePath)
 			} else {
 				// NOTE: Layout must be parsed before template so {{ block }} defaults work
-				paths = append(partialPaths, layoutPath, templatePath)
+				layoutName = strings.TrimPrefix(layoutPath, filepath.Join(r.root, "layouts")+"/")
+				t, err = template.
+					New(viewName + "::" + layoutName).
+					Funcs(r.funcs).
+					ParseFiles(layoutPath, templatePath)
 			}
-
-			t, err := template.New("").Funcs(r.funcs).ParseFiles(paths...)
 
 			if err != nil {
 				return err
 			}
 
-			var layoutName string
-			if layoutPath == "" {
-				layoutName = ""
-			} else {
-				layoutName = filepath.Base(layoutPath)
-			}
-
-			r.templates[templateName][layoutName] = t
+			r.views[viewName][layoutName] = t
 		}
 	}
 
-	fmt.Printf("[renderer] Parsed %d templates\n", len(templatePaths))
+	partialPaths, err := r.findTemplates(r.root, "partials")
+	if err != nil {
+		return err
+	}
+
+	r.partials = make(map[string]*template.Template)
+	for _, partialPath := range partialPaths {
+		base := filepath.Join(r.root, "partials")
+		name := strings.TrimPrefix(partialPath, base+"/")
+		tmpl, err := ioutil.ReadFile(partialPath)
+		if err != nil {
+			return err
+		}
+		t, err := template.New(name).Funcs(r.funcs).Parse(string(tmpl))
+		if err != nil {
+			return err
+		}
+		r.partials[name] = t
+	}
+
+	fmt.Printf(
+		"[renderer] Parsed %d views and %d partials\n",
+		len(templatePaths),
+		len(partialPaths),
+	)
 
 	return nil
 }
@@ -82,23 +104,38 @@ func (r *Renderer) RenderString(w io.Writer, html string, data interface{}) erro
 	return t.Execute(w, data)
 }
 
-func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
-	if len(r.templates) == 0 {
-		return errors.New(fmt.Sprintf("No templates found in %s", r.root))
+func (r *Renderer) RenderPartial(name string, data interface{}) string {
+	t, ok := r.partials[name]
+	if !ok {
+		panic("Partial not found with name " + name)
 	}
 
-	if _, ok := r.templates[template]; !ok {
+	var w bytes.Buffer
+	err := t.Execute(&w, data)
+	if err != nil {
+		panic("Failed to render partial: " + err.Error())
+	}
+
+	return w.String()
+}
+
+func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
+	if len(r.views) == 0 {
+		return errors.New(fmt.Sprintf("No views found in %s", r.root))
+	}
+
+	if _, ok := r.views[template]; !ok {
 		templates := make([]string, 0)
-		for name := range r.templates {
+		for name := range r.views {
 			templates = append(templates, name)
 		}
 		options := strings.Join(templates, ", ")
 		return errors.New(fmt.Sprintf("Template not found '%s'. Options are %s", template, options))
 	}
 
-	t, ok := r.templates[template][layout]
+	t, ok := r.views[template][layout]
 	if !ok {
-		return errors.New(fmt.Sprintf("Layout (%s) not found. Options %#v", layout, r.templates[template]))
+		return errors.New(fmt.Sprintf("Layout (%s) not found. Options %#v", layout, r.views[template]))
 	}
 
 	if layout == "" {
@@ -121,11 +158,17 @@ func (r *Renderer) findTemplates(dirs ...string) ([]string, error) {
 
 	paths := make([]string, 0)
 	for _, f := range fileInfo {
+		p := filepath.Join(dir, f.Name())
 		if f.IsDir() {
-			// TODO: Implement recursive search
-			continue
+			// Recurse if directory
+			more, err := r.findTemplates(p)
+			if err != nil {
+				return nil, err
+			}
+			paths = append(paths, more...)
+		} else {
+			paths = append(paths, p)
 		}
-		paths = append(paths, filepath.Join(dir, f.Name()))
 	}
 
 	return paths, nil
