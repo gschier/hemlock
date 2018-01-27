@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gschier/hemlock"
@@ -68,32 +67,10 @@ func NewRouter(app *hemlock.Application) *Router {
 		})
 	}
 
-	// Redirect trailing slashes
-	router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
-		fmt.Printf("HELLO? %s\n", req.Path())
-		p := req.Path()
-		if p != "/" && strings.HasSuffix(p, "/") {
-			req.URL().Path = strings.TrimSuffix(req.URL().Path, "/")
-			return res.Redirect(req.URL().String(), http.StatusFound)
-		}
-		return next(req, res)
-	})
-
-	router.UseG(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("HELLO FROM LEGACY\n")
-			next.ServeHTTP(w, r)
-		})
-	})
-
 	// Add main handler to call middleware
-	fmt.Printf("0\n")
 	router.mux.Use(func(next http.Handler) http.Handler {
-		fmt.Printf("1\n")
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("2\n")
 			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
-				fmt.Printf("3\n")
 				next.ServeHTTP(w2, r2)
 			})
 		})
