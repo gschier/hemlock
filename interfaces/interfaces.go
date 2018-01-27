@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 // Container is used to bind objects to the application
@@ -21,8 +20,11 @@ type Container interface {
 
 // Response is used to retrieve data from an HTTP request
 type Request interface {
-	// URL returns the URL of the request
-	URL() *url.URL
+	// RouteName returns the name of the current route
+	RouteName() string
+
+	// Path returns the path of the current URL
+	Path() string
 
 	// Input grabs input from the query string by name
 	Query(name string) string
@@ -38,6 +40,9 @@ type Request interface {
 
 	// Context returns the context.Context of the current request
 	Context() context.Context
+
+	// WithContext returns a shallow copy of the request with a new context
+	WithContext(ctx context.Context) Request
 }
 
 // Response is be used to send data to the client

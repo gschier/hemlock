@@ -30,17 +30,20 @@ type Router struct {
 func NewRouter(app *hemlock.Application) *Router {
 	router := &Router{app: app, mux: mux.NewRouter()}
 
-	router.UseG(handlers.RecoveryHandler())
+	if !app.IsDev() {
+		router.UseG(handlers.RecoveryHandler())
+	}
+
 	router.UseG(handlers.CompressHandler)
 
 	// Add logging middleware
-	if app.Config.Env == "development" {
+	if app.IsDev() {
 		router.UseG(func(next http.Handler) http.Handler {
 			return handlers.LoggingHandler(os.Stdout, next)
 		})
 	}
 
-	if app.Config.Env == "production" {
+	if !app.IsDev() {
 		// Add caching middleware
 		router.UseG(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +70,7 @@ func NewRouter(app *hemlock.Application) *Router {
 	// Add static handler
 	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
 		func(req interfaces.Request, res interfaces.Response) interfaces.Result {
-			p := req.URL().Path
+			p := req.Path()
 			p = strings.TrimPrefix(p, router.app.Config.PublicPrefix)
 			cwd, _ := os.Getwd()
 			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)

@@ -62,7 +62,7 @@ func buildName() string {
 }
 
 func buildApp(srcDir string) error {
-	fmt.Printf("Building %v...\n", filepath.Base(buildPath()))
+	fmt.Printf("[hemlock] Building %v...\n", filepath.Base(buildPath()))
 	cmd := exec.Command("go", "build", "-o", buildPath(), ".")
 	cmd.Dir = srcDir
 	stderr, err := cmd.StderrPipe()
@@ -95,7 +95,7 @@ func buildApp(srcDir string) error {
 }
 
 func runApp(srcDir string) {
-	fmt.Printf("Running...\n")
+	fmt.Printf("[hemlock] Running...\n")
 	cmd := exec.Command(buildPath())
 	cmd.Dir = srcDir
 
@@ -146,7 +146,7 @@ func watchFolder(path string) {
 			case ev := <-watcher.Event:
 				changeChannel <- ev.Name
 			case err := <-watcher.Error:
-				fmt.Printf("File watch error: %v\n", err)
+				fmt.Printf("[hemlock] File watch error: %v\n", err)
 			}
 		}
 	}()
@@ -181,17 +181,12 @@ func watchApp(srcDir string) {
 
 			things, _ := ioutil.ReadDir(path)
 			for _, thing := range things {
-				if strings.HasSuffix(thing.Name(), ".go") {
-					watchableDirs = append(watchableDirs, path)
-					break
-				}
-				if strings.HasSuffix(thing.Name(), ".md") {
-					watchableDirs = append(watchableDirs, path)
-					break
-				}
-				if strings.HasSuffix(thing.Name(), ".html") {
-					watchableDirs = append(watchableDirs, path)
-					break
+				exts := []string{".go", ".md", ".html", ".css", ".svg", "js"}
+				for _, ext := range exts {
+					if strings.HasSuffix(thing.Name(), ext) {
+						watchableDirs = append(watchableDirs, path)
+						break
+					}
 				}
 			}
 		}
@@ -205,7 +200,7 @@ func watchApp(srcDir string) {
 
 	needsToBuild := false
 	nextBuild := time.Now()
-	fmt.Printf("Watching for changes...\n")
+	fmt.Printf("[hemlock] Watching for changes...\n")
 	for {
 		select {
 		case <-changeChannel:
@@ -226,7 +221,7 @@ func buildAndRunApp(srcDir string) {
 	// Build before we kill the existing one
 	err := buildApp(srcDir)
 	if err != nil {
-		fmt.Printf("Build error: %v\n", err)
+		fmt.Printf("[hemlock] Build error: %v\n", err)
 		return
 	}
 

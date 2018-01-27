@@ -102,7 +102,7 @@ func (a *Application) Start() {
 	}
 
 	go func() {
-		fmt.Printf("Started server at %v\n", server.Addr)
+		fmt.Printf("[server] Started at %v\n", server.Addr)
 	}()
 
 	log.Fatal(server.ListenAndServe())
@@ -143,6 +143,10 @@ func (a *Application) Resolve(v ...interface{}) {
 	for i := 0; i < len(v); i++ {
 		a.container.Resolve(v[i])
 	}
+}
+
+func (a *Application) IsDev() bool {
+	return strings.ToLower(a.Config.Env) != "production"
 }
 
 func (a *Application) Env(name string) string {
