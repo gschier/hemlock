@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 type middlewareContainer struct {
@@ -29,7 +30,7 @@ type Router struct {
 func NewRouter(app *hemlock.Application) *Router {
 	router := &Router{app: app, mux: mux.NewRouter()}
 
-	//router.UseG(handlers.RecoveryHandler())
+	router.UseG(handlers.RecoveryHandler())
 	router.UseG(handlers.CompressHandler)
 
 	// Add logging middleware
@@ -63,10 +64,25 @@ func NewRouter(app *hemlock.Application) *Router {
 		})
 	}
 
+	// Add static handler
+	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
+		func(req interfaces.Request, res interfaces.Response) interfaces.Result {
+			p := req.URL().Path
+			p = strings.TrimPrefix(p, router.app.Config.PublicPrefix)
+			cwd, _ := os.Getwd()
+			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)
+			s, err := os.Stat(fullPath)
+			if err != nil || s.IsDir() {
+				return nil
+			}
+			f, err := os.Open(fullPath)
+			return res.Data(f)
+		},
+	)
+
 	// Add main handler to call middleware
 	router.mux.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			router.setupURLs()
 			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
 				next.ServeHTTP(w2, r2)
 			})
@@ -244,27 +260,4 @@ func (router *Router) nextCombinedMiddleware(
 			router.nextCombinedMiddleware(i+1, w, r, fn)
 		})).ServeHTTP(w, r)
 	}
-}
-
-func (router *Router) setupURLs() {
-	if router.didSetupURLs {
-		return
-	}
-
-	// Add static middleware
-	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
-		func(req interfaces.Request, res interfaces.Response) interfaces.Result {
-			p := req.URL().Path
-			cwd, _ := os.Getwd()
-			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)
-			s, err := os.Stat(fullPath)
-			if err != nil || s.IsDir() {
-				return nil
-			}
-			f, err := os.Open(fullPath)
-			return res.Data(f)
-		},
-	)
-
-	router.didSetupURLs = true
 }

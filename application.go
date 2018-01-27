@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 var globalAppInstance *Application
@@ -21,6 +22,18 @@ type Application struct {
 }
 
 func NewApplication(config *Config, providers []Provider) *Application {
+	// Validate the config
+	func() {
+		if !strings.HasPrefix(config.PublicPrefix, "/") {
+			panic(`PublicPrefix should start with "/"`)
+		}
+
+		if config.PublicPrefix == "/" {
+			panic("PublicPrefix cannot be root")
+		}
+	}()
+
+	// Create the app
 	app := &Application{
 		Config: config,
 	}
@@ -84,7 +97,7 @@ func (a *Application) Start() {
 
 	// TODO: Move this into a provider
 	server := &http.Server{
-		Addr: a.Config.HTTP.Host + ":" + a.Config.HTTP.Port,
+		Addr:    a.Config.HTTP.Host + ":" + a.Config.HTTP.Port,
 		Handler: r.Handler(),
 	}
 

@@ -156,7 +156,7 @@ func watchFolder(path string) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Watching %v...\n", path)
+	//fmt.Printf("Watching %v...\n", path)
 }
 
 func watchApp(srcDir string) {

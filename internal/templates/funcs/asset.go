@@ -13,16 +13,17 @@ func asset(name string) template.URL {
 	app := hemlock.App()
 	base := app.Config.URL
 	assetBase := app.Config.AssetBase
+	publicPrefix := app.Config.PublicPrefix
 	fullURL := name
 	if strings.Contains(base, "://") {
 		u, err := url2.Parse(app.Config.URL)
 		if err != nil {
 			log.Panicf("Invalid App URL: %s", base)
 		}
-		u.Path = path.Join(u.Path, assetBase, name)
+		u.Path = path.Join(u.Path, publicPrefix, assetBase, name)
 		fullURL = u.String()
 	} else {
-		fullURL = path.Join(base, assetBase, name)
+		fullURL = path.Join(base, publicPrefix, assetBase, name)
 	}
 
 	return template.URL(fullURL)
