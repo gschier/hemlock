@@ -8,7 +8,7 @@ import (
 
 type Response struct {
 	W              http.ResponseWriter
-	r              *http.Request
+	req            *Request
 	renderer       *templates.Renderer
 	hasWrittenData bool
 	router         *Router
@@ -19,16 +19,15 @@ type Response struct {
 
 func newResponse(
 	w http.ResponseWriter,
-	r *http.Request,
+	req *Request,
 	renderer *templates.Renderer,
 	router *Router,
-) interfaces.Response {
+) *Response {
 	return &Response{
 		W:        w,
-		r:        r,
+		req:      req,
 		renderer: renderer,
 		router:   router,
-		status:   200,
 	}
 }
 
@@ -80,5 +79,5 @@ func (res *Response) End() interfaces.Result {
 }
 
 func (res *Response) newResult() interfaces.Result {
-	return newResult(res.W, res.r, res.status, res.renderer, res.router)
+	return newResult(res.W, res.req.R, res.status, res.renderer, res.router)
 }

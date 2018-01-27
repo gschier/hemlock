@@ -29,6 +29,11 @@ func (r *Route) View(uri, view, layout string, data interface{}) interfaces.Rout
 	})
 }
 
+func (r *Route) Callback(callback interfaces.Callback) interfaces.Route {
+	r.route.HandlerFunc(r.wrap(callback))
+	return r
+}
+
 func (r *Route) Get(uri string, callback interfaces.Callback) interfaces.Route {
 	return r.assignCallback([]string{http.MethodGet}, uri, callback)
 }
@@ -73,6 +78,11 @@ func (r *Route) Match(methods []string, uri string, callback interfaces.Callback
 	return r.assignCallback(methods, uri, callback)
 }
 
+func (r *Route) Methods(methods ...string) interfaces.Route {
+	r.route.Methods(methods...)
+	return r
+}
+
 func (r *Route) Host(uri string) interfaces.Route {
 	r.route.Host(uri)
 	return r
@@ -89,16 +99,23 @@ func (r *Route) Name(n string) interfaces.Route {
 }
 
 func (r *Route) Use(m ...interfaces.Middleware) {
-	r.router.useMiddleware(m...)
+	r.router.Use(m...)
+}
+
+func (r *Route) UseG(m ...func(http.Handler) http.Handler) {
+	r.router.UseG(m...)
 }
 
 func (r *Route) With(m ...interfaces.Middleware) interfaces.Route {
-	r.router.useMiddleware(m...)
-	return r
+	return r.router.With(m...)
+}
+
+func (r *Route) WithG(m ...func(http.Handler) http.Handler) interfaces.Route {
+	return r.router.WithG(m...)
 }
 
 func (r *Route) Group(fn func(router interfaces.Router)) {
-	fn(r.router.fork(r.route.Subrouter()))
+	fn(r.router.fork())
 }
 
 func (r *Route) wrap(callback interface{}) http.HandlerFunc {
@@ -107,7 +124,7 @@ func (r *Route) wrap(callback interface{}) http.HandlerFunc {
 		r.router.app.Resolve(&renderer)
 
 		req := newRequest(r2)
-		res := newResponse(w, r2, &renderer, r.router)
+		res := newResponse(w, req, &renderer, r.router)
 
 		newApp := hemlock.CloneApplication(r.router.app)
 		newApp.Instance(req)
@@ -127,7 +144,7 @@ func (r *Route) wrap(callback interface{}) http.HandlerFunc {
 
 func (r *Route) assignCallback(methods []string, uri string, callback interface{}) interfaces.Route {
 	if methods != nil {
-		r.route.Methods(methods...)
+		r.Methods(methods...)
 	}
 	r.route.Path(uri).HandlerFunc(r.wrap(callback))
 	return r

@@ -87,6 +87,7 @@ type Result interface {
 
 // Router provides the ability to define HTTP routes
 type Router interface {
+	Callback(callback Callback) Route
 	Get(uri string, callback Callback) Route
 	Head(uri string, callback Callback) Route
 	Post(uri string, callback Callback) Route
@@ -96,6 +97,7 @@ type Router interface {
 	Options(uri string, callback Callback) Route
 	Any(uri string, callback Callback) Route
 	Match(methods []string, uri string, callback Callback) Route
+	Methods(methods ...string) Route
 
 	// Redirect creates a static redirect route for the provided URI
 	Redirect(uri, to string, code int) Route
@@ -122,7 +124,10 @@ type Router interface {
 	//     admin := r.With(adminMiddleware)
 	//	   admin.Get("/admin", adminDashboard)
 	With(...Middleware) Route
+	WithG(...func(http.Handler) http.Handler) Route
+
 	Use(...Middleware)
+	UseG(...func(http.Handler) http.Handler)
 
 	// URL returns a URL based on an assigned route name
 	URL(path string) string
@@ -138,6 +143,7 @@ type RouteParams map[string]string
 
 // Route represents an HTTP route
 type Route interface {
+	Callback(callback Callback) Route
 	Get(uri string, callback Callback) Route
 	Post(uri string, callback Callback) Route
 	Put(uri string, callback Callback) Route
@@ -149,6 +155,7 @@ type Route interface {
 	Trace(uri string, callback Callback) Route
 	Any(uri string, callback Callback) Route
 	Match(methods []string, uri string, callback Callback) Route
+	Methods(methods ...string) Route
 
 	Redirect(uri, to string, code int) Route
 
@@ -158,7 +165,9 @@ type Route interface {
 	Prefix(uri string) Route
 	Group(func(Router))
 	With(...Middleware) Route
+	WithG(...func(http.Handler) http.Handler) Route
 	Use(...Middleware)
+	UseG(...func(http.Handler) http.Handler)
 }
 
 // Callback is a function that takes injected arguments

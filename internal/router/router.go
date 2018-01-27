@@ -14,29 +14,34 @@ import (
 	"path/filepath"
 )
 
+type middlewareContainer struct {
+	hemlock interfaces.Middleware
+	native  func(http.Handler) http.Handler
+}
+
 type Router struct {
-	handler     http.Handler
-	app         *hemlock.Application
-	mux         *mux.Router
-	middlewares []interfaces.Middleware
+	app          *hemlock.Application
+	mux          *mux.Router
+	middlewares  []*middlewareContainer
+	didSetupURLs bool
 }
 
 func NewRouter(app *hemlock.Application) *Router {
 	router := &Router{app: app, mux: mux.NewRouter()}
 
-	//m.Use(middleware.Recoverer)
-	//m.Use(middleware.DefaultCompress)
-	//m.Use(middleware.CloseNotify)
-	//m.Use(middleware.RedirectSlashes)
+	router.UseG(handlers.RecoveryHandler())
+	router.UseG(handlers.CompressHandler)
 
+	// Add logging middleware
 	if app.Config.Env == "development" {
-		router.Use(wrapMiddleware(func(next http.Handler) http.Handler {
+		router.UseG(func(next http.Handler) http.Handler {
 			return handlers.LoggingHandler(os.Stdout, next)
-		}))
+		})
 	}
 
 	if app.Config.Env == "production" {
-		router.Use(wrapMiddleware(func(next http.Handler) http.Handler {
+		// Add caching middleware
+		router.UseG(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				ext := filepath.Ext(r.URL.Path)
 				if ext == ".css" || ext == ".js" {
@@ -44,8 +49,9 @@ func NewRouter(app *hemlock.Application) *Router {
 				}
 				next.ServeHTTP(w, r)
 			})
-		}))
-		router.Use(wrapMiddleware(func(next http.Handler) http.Handler {
+		})
+		// Add HTTP redirect middleware
+		router.UseG(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("X-Forwarded-Proto") == "http" {
 					newUrl := "https://" + r.Host + r.URL.String()
@@ -54,33 +60,17 @@ func NewRouter(app *hemlock.Application) *Router {
 					next.ServeHTTP(w, r)
 				}
 			})
-		}))
+		})
 	}
 
-	router.Use(wrapMiddleware(func(next http.Handler) http.Handler {
+	// Add main handler to call middleware
+	router.mux.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			p := r.URL.Path
-			cwd, _ := os.Getwd()
-			fullPath := filepath.Join(cwd, app.Config.PublicDirectory, p)
-			s, err := os.Stat(fullPath)
-			if err != nil || s.IsDir() {
+			router.setupURLs()
+			router.nextCombinedMiddleware(0, w, r, func(w http.ResponseWriter, r *http.Request) {
 				next.ServeHTTP(w, r)
-				return
-			}
-
-			http.ServeFile(w, r, fullPath)
+			})
 		})
-	}))
-
-	router.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var renderer templates.Renderer
-		router.app.Resolve(&renderer)
-		req := newRequest(r)
-		res := newResponse(w, r, &renderer, router)
-		result := nextMiddleware(router.middlewares, 0, req, res)
-		if result == nil {
-			router.mux.ServeHTTP(w, r)
-		}
 	})
 
 	return router
@@ -92,6 +82,10 @@ func (router *Router) Redirect(uri, to string, code int) interfaces.Route {
 
 func (router *Router) View(uri, view, layout string, data interface{}) interfaces.Route {
 	return router.newRoute().View(uri, view, layout, data)
+}
+
+func (router *Router) Callback(callback interfaces.Callback) interfaces.Route {
+	return router.newRoute().Callback(callback)
 }
 
 func (router *Router) Get(uri string, callback interfaces.Callback) interfaces.Route {
@@ -138,6 +132,10 @@ func (router *Router) Match(methods []string, uri string, callback interfaces.Ca
 	return router.newRoute().Match(methods, uri, callback)
 }
 
+func (router *Router) Methods(methods ...string) interfaces.Route {
+	return router.newRoute().Methods(methods...)
+}
+
 func (router *Router) Prefix(uri string) interfaces.Route {
 	return router.newRoute().Prefix(uri)
 }
@@ -147,16 +145,36 @@ func (router *Router) Host(hostname string) interfaces.Route {
 }
 
 func (router *Router) With(m ...interfaces.Middleware) interfaces.Route {
-	return router.newRoute().With(m...)
+	newRouter := router.fork()
+	newRouter.Use(m...)
+	return newRouter.newRoute()
+}
+
+func (router *Router) WithG(m ...func(http.Handler) http.Handler) interfaces.Route {
+	newRouter := router.fork()
+	newRouter.UseG(m...)
+	return newRouter.newRoute()
 }
 
 func (router *Router) Use(m ...interfaces.Middleware) {
-	router.useMiddleware(m...)
+	for _, m := range m {
+		router.middlewares = append(router.middlewares, &middlewareContainer{
+			hemlock: m,
+		})
+	}
+}
+
+func (router *Router) UseG(m ...func(http.Handler) http.Handler) {
+	for _, m := range m {
+		router.middlewares = append(router.middlewares, &middlewareContainer{
+			native: m,
+		})
+	}
 }
 
 // Handler returns the HTTP handler
 func (router *Router) Handler() http.Handler {
-	return router.handler
+	return router.mux
 }
 
 func (router *Router) Route(name string, params interfaces.RouteParams) string {
@@ -190,14 +208,63 @@ func (router *Router) URL(p string) string {
 	return u.String()
 }
 
-func (router *Router) fork(mux *mux.Router) *Router {
-	return &Router{mux: mux, app: router.app}
+func (router *Router) fork() *Router {
+	return &Router{mux: router.mux.NewRoute().Subrouter(), app: router.app}
 }
 
 func (router *Router) newRoute() *Route {
 	return NewRoute(router, router.mux.NewRoute())
 }
 
-func (router *Router) useMiddleware(m ...interfaces.Middleware) {
-	router.middlewares = append(router.middlewares, m...)
+func (router *Router) nextCombinedMiddleware(
+	i int,
+	w http.ResponseWriter,
+	r *http.Request,
+	fn func(w http.ResponseWriter, r *http.Request),
+) {
+	if i == len(router.middlewares) {
+		fn(w, r)
+		return
+	}
+
+	m := router.middlewares[i]
+	if m.hemlock != nil {
+		next := func(newReq interfaces.Request, newRes interfaces.Response) interfaces.Result {
+			router.nextCombinedMiddleware(i+1, newRes.(*Response).W, newReq.(*Request).R, fn)
+			return nil
+		}
+
+		var renderer templates.Renderer
+		router.app.Resolve(&renderer)
+		req := newRequest(r)
+		res := newResponse(w, req, &renderer, router)
+		m.hemlock(req, res, next)
+	} else {
+		m.native(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			router.nextCombinedMiddleware(i+1, w, r, fn)
+		})).ServeHTTP(w, r)
+	}
+}
+
+func (router *Router) setupURLs() {
+	if router.didSetupURLs {
+		return
+	}
+
+	// Add static middleware
+	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
+		func(req interfaces.Request, res interfaces.Response) interfaces.Result {
+			p := req.URL().Path
+			cwd, _ := os.Getwd()
+			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)
+			s, err := os.Stat(fullPath)
+			if err != nil || s.IsDir() {
+				return nil
+			}
+			f, err := os.Open(fullPath)
+			return res.Data(f)
+		},
+	)
+
+	router.didSetupURLs = true
 }

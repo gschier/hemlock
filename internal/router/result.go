@@ -8,8 +8,10 @@ import (
 	"github.com/gschier/hemlock/internal/templates"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,10 +22,12 @@ type Result struct {
 	status   int
 	renderer *templates.Renderer
 	router   *Router
+	error    error
 
-	// hasWrittenData signifies that data has already been written
+	// hasSentHeaders signifies that data has already been written
 	// and headers can no longer be applied
-	hasWrittenData bool
+	hasSentHeaders bool
+	hasSentData    bool
 }
 
 func newResult(
@@ -46,10 +50,16 @@ func (r *Result) RedirectRoute(name string, params map[string]string, code int) 
 }
 
 func (r *Result) Error(err error) interfaces.Result {
-	r.status = http.StatusInternalServerError
-	// TODO: Make this better
-	fmt.Printf("[router] Error: %v\n", err)
-	return r.Data("Internal server error")
+	r.error = err
+
+	r.flushHeaders()
+
+	// Render error view if we haven't sent data
+	if !r.hasSentData {
+		return r.View("error.html", "", nil)
+	}
+
+	return r
 }
 
 func (r *Result) Sprintf(format string, a ...interface{}) interfaces.Result {
@@ -57,6 +67,10 @@ func (r *Result) Sprintf(format string, a ...interface{}) interfaces.Result {
 }
 
 func (r *Result) View(name, layout string, data interface{}) interfaces.Result {
+	// Set content type based on extension of template
+	ext := filepath.Ext(name)
+	r.w.Header().Set("Content-Type", mime.TypeByExtension(ext))
+
 	r.flushHeaders()
 
 	ctx := r.getRenderContext(data)
@@ -69,6 +83,8 @@ func (r *Result) View(name, layout string, data interface{}) interfaces.Result {
 
 func (r *Result) Data(data interface{}) interfaces.Result {
 	r.flushHeaders()
+
+	r.hasSentData = true
 
 	if v, ok := data.(string); ok {
 		r.w.Write([]byte(v))
@@ -109,12 +125,25 @@ func (r *Result) getRenderContext(data interface{}) interface{} {
 }
 
 func (r *Result) flushHeaders() {
-	if r.hasWrittenData {
+	if r.hasSentHeaders {
 		return
 	}
 
-	// Write the status code
-	r.w.WriteHeader(r.status)
+	// Set status if not set yet
+	if r.status == 0 {
+		r.status = http.StatusOK
+	}
+
+	// Send error response if we have not written anything yet
+	if r.error != nil && r.status == 0 {
+		r.status = http.StatusInternalServerError
+	}
+
+	// Log error if there was one
+	// TODO: Make this better
+	if r.error != nil {
+		fmt.Printf("[router] Error: %v\n", r.error)
+	}
 
 	// Set any headers that need to be
 	if r.w.Header().Get("Content-Type") == "" {
@@ -127,6 +156,10 @@ func (r *Result) flushHeaders() {
 		}
 	}
 
-	// Mark that we've done it
-	r.hasWrittenData = true
+	// Write the status code and headers
+	r.w.WriteHeader(r.status)
+
+	// Mark that we've done it because we're not allowed to write
+	// any headers after this point
+	r.hasSentHeaders = true
 }

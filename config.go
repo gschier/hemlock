@@ -6,6 +6,7 @@ type Config struct {
 	URL                string
 	TemplatesDirectory string
 	PublicDirectory    string
+	PublicPrefix       string
 	AssetBase          string
 	Database           *DatabaseConfig
 	HTTP               *HTTPConfig
