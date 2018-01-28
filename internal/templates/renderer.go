@@ -53,7 +53,7 @@ func (r *Renderer) Init() error {
 				// NOTE: Layout must be parsed before template so {{ block }} defaults work
 				layoutName = strings.TrimPrefix(layoutPath, filepath.Join(r.root, "layouts")+"/")
 				t, err = template.
-					New(viewName + "::" + layoutName).
+					New(viewName+"::"+layoutName).
 					Funcs(r.funcs).
 					ParseFiles(layoutPath, templatePath)
 			}

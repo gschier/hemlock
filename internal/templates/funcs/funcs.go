@@ -5,12 +5,11 @@ import (
 	"html/template"
 )
 
-func Funcs (app *hemlock.Application) *template.FuncMap {
+func Funcs(app *hemlock.Application) *template.FuncMap {
 	return &template.FuncMap{
-		"asset": asset(app),
-		"url": url(app),
+		"asset":   asset(app),
+		"url":     url(app),
 		"partial": partial(app),
-		"route": route(app),
+		"route":   route(app),
 	}
 }
-

@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type HttpProvider struct { }
+type HttpProvider struct{}
 
 func (p *HttpProvider) Register(c interfaces.Container) {
 	c.Singleton(func(app *hemlock.Application) (*http.Server, error) {
