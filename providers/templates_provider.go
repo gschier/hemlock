@@ -10,7 +10,7 @@ import (
 type TemplatesProvider struct{}
 
 func (p *TemplatesProvider) Register(c interfaces.Container) {
-	c.Singleton(func(app *hemlock.Application) (*templates.Renderer, error) {
+	c.Singleton(func(app *hemlock.Application) (*templates.renderer, error) {
 		dir := app.Path(app.Config.TemplatesDirectory)
 
 		var fm template.FuncMap

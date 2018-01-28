@@ -12,18 +12,18 @@ import (
 	"strings"
 )
 
-type Renderer struct {
+type renderer struct {
 	root     string
 	funcs    template.FuncMap
 	views    map[string]map[string]*template.Template
 	partials map[string]*template.Template
 }
 
-func NewRenderer(root string, funcs template.FuncMap) *Renderer {
-	return &Renderer{root: root, funcs: funcs}
+func NewRenderer(root string, funcs template.FuncMap) *renderer {
+	return &renderer{root: root, funcs: funcs}
 }
 
-func (r *Renderer) Init() error {
+func (r *renderer) Init() error {
 	templatePaths, err := r.findTemplates(r.root, "views")
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (r *Renderer) Init() error {
 	return nil
 }
 
-func (r *Renderer) RenderString(w io.Writer, html string, data interface{}) error {
+func (r *renderer) RenderString(w io.Writer, html string, data interface{}) error {
 	t, err := template.New("").Funcs(r.funcs).Parse(html)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (r *Renderer) RenderString(w io.Writer, html string, data interface{}) erro
 	return t.Execute(w, data)
 }
 
-func (r *Renderer) RenderPartial(name string, data interface{}) string {
+func (r *renderer) RenderPartial(name string, data interface{}) string {
 	t, ok := r.partials[name]
 	if !ok {
 		panic("Partial not found with name " + name)
@@ -119,7 +119,7 @@ func (r *Renderer) RenderPartial(name string, data interface{}) string {
 	return w.String()
 }
 
-func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
+func (r *renderer) RenderTemplate(w io.Writer, template, layout string, data interface{}) error {
 	if len(r.views) == 0 {
 		return errors.New(fmt.Sprintf("No views found in %s", r.root))
 	}
@@ -145,7 +145,7 @@ func (r *Renderer) RenderTemplate(w io.Writer, template, layout string, data int
 	}
 }
 
-func (r *Renderer) findTemplates(dirs ...string) ([]string, error) {
+func (r *renderer) findTemplates(dirs ...string) ([]string, error) {
 	dir := filepath.Join(dirs...)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return make([]string, 0), nil

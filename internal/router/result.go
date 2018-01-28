@@ -21,7 +21,7 @@ type Result struct {
 	r *http.Request
 
 	status   int
-	renderer *templates.Renderer
+	renderer *templates.renderer
 	router   *Router
 	error    error
 
@@ -35,7 +35,7 @@ func newResult(
 	w http.ResponseWriter,
 	r *http.Request,
 	status int,
-	renderer *templates.Renderer,
+	renderer *templates.renderer,
 	router *Router,
 ) interfaces.Result {
 	return &Result{w: w, r: r, status: status, renderer: renderer, router: router}

@@ -9,7 +9,7 @@ import (
 type Response struct {
 	W              http.ResponseWriter
 	req            *Request
-	renderer       *templates.Renderer
+	renderer       *templates.renderer
 	hasWrittenData bool
 	router         *Router
 
@@ -20,7 +20,7 @@ type Response struct {
 func newResponse(
 	w http.ResponseWriter,
 	req *Request,
-	renderer *templates.Renderer,
+	renderer *templates.renderer,
 	router *Router,
 ) *Response {
 	return &Response{
