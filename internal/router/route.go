@@ -120,7 +120,7 @@ func (r *Route) Group(fn func(router interfaces.Router)) {
 
 func (r *Route) wrap(callback interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r2 *http.Request) {
-		var renderer templates.renderer
+		var renderer templates.Renderer
 		r.router.app.Resolve(&renderer)
 
 		req := newRequest(r2)

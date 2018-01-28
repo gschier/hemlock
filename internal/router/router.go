@@ -253,7 +253,7 @@ func (router *Router) nextCombinedMiddleware(
 			return nil
 		}
 
-		var renderer templates.renderer
+		var renderer templates.Renderer
 		router.app.Resolve(&renderer)
 		req := newRequest(r)
 		res := newResponse(w, req, &renderer, router)

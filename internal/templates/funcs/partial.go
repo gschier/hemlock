@@ -8,7 +8,7 @@ import (
 
 func partial(app *hemlock.Application) interface{} {
 	return func(name string, data ...interface{}) template.HTML {
-		var renderer templates.renderer
+		var renderer templates.Renderer
 		app.Resolve(&renderer)
 
 		var renderData interface{}
