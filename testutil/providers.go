@@ -6,7 +6,9 @@ import (
 )
 
 func NewTestApplication(p ...hemlock.Provider) *hemlock.Application {
-	return hemlock.NewApplication(&hemlock.Config{}, p)
+	return hemlock.NewApplication(&hemlock.Config{
+		PublicPrefix: "/static",
+	}, p)
 }
 
 type CarServiceInterface interface {
