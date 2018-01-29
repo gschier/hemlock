@@ -1,6 +1,7 @@
 package funcs
 
 import (
+	"fmt"
 	"github.com/gschier/hemlock"
 	"html/template"
 	url2 "net/url"
@@ -37,9 +38,12 @@ func asset(app *hemlock.Application) interface{} {
 		fullURL.Path = path.Join(fullURL.Path, name)
 
 		if app.IsProd() {
-			fullURL.Query().Set("version", hemlock.CacheBustKey)
+			q := fullURL.Query()
+			q.Set("v", hemlock.CacheBustKey)
+			fullURL.RawQuery = q.Encode()
 		}
 
+		fmt.Printf("HELLO: %#v\n", fullURL.Query())
 		return template.URL(fullURL.String())
 	}
 }
