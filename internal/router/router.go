@@ -7,6 +7,7 @@ import (
 	"github.com/gschier/hemlock/interfaces"
 	"github.com/gschier/hemlock/internal/templates"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -85,10 +86,12 @@ func NewRouter(app *hemlock.Application) *Router {
 			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)
 			s, err := os.Stat(fullPath)
 			if err != nil || s.IsDir() {
-				return nil
+				return res.Status(404).Data("Resource not found")
 			}
 			f, err := os.Open(fullPath)
-			return res.Data(f)
+
+			ext := filepath.Ext(fullPath)
+			return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
 		},
 	)
 
