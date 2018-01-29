@@ -12,7 +12,7 @@ import (
 func asset(app *hemlock.Application) interface{} {
 	return func(name string) template.URL {
 		base := app.Config.URL
-		assetBase := app.Config.AssetBase
+		publicDir := app.Config.PublicDirectory
 		publicPrefix := app.Config.PublicPrefix
 		fullURL := name
 		if strings.Contains(base, "://") {
@@ -20,10 +20,10 @@ func asset(app *hemlock.Application) interface{} {
 			if err != nil {
 				log.Panicf("Invalid App URL: %s", base)
 			}
-			u.Path = path.Join(u.Path, publicPrefix, assetBase, name)
+			u.Path = path.Join(u.Path, publicPrefix, publicDir, name)
 			fullURL = u.String()
 		} else {
-			fullURL = path.Join(base, publicPrefix, assetBase, name)
+			fullURL = path.Join(base, publicPrefix, publicDir, name)
 		}
 
 		return template.URL(fullURL)

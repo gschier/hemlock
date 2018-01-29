@@ -10,7 +10,6 @@ type Config struct {
 	TemplatesDirectory string
 	PublicDirectory    string
 	PublicPrefix       string
-	AssetBase          string
 	Database           *DatabaseConfig
 	HTTP               *HTTPConfig
 	Extra              []interface{}
