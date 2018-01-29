@@ -3,7 +3,6 @@ package funcs
 import (
 	"github.com/gschier/hemlock"
 	"html/template"
-	"log"
 	url2 "net/url"
 	"path"
 	"strings"
@@ -11,21 +10,32 @@ import (
 
 func asset(app *hemlock.Application) interface{} {
 	return func(name string) template.URL {
-		base := app.Config.URL
-		publicDir := app.Config.PublicDirectory
+		var (
+			err     error
+			fullURL *url2.URL
+		)
+
 		publicPrefix := app.Config.PublicPrefix
-		fullURL := name
-		if strings.Contains(base, "://") {
-			u, err := url2.Parse(app.Config.URL)
+
+		prefixAbsolute := strings.HasPrefix(publicPrefix, "https://") ||
+			strings.HasPrefix(publicPrefix, "http://") ||
+			strings.HasPrefix(publicPrefix, "//")
+
+		if prefixAbsolute {
+			fullURL, err = url2.Parse(publicPrefix)
 			if err != nil {
-				log.Panicf("Invalid App URL: %s", base)
+				panic(err)
 			}
-			u.Path = path.Join(u.Path, publicPrefix, publicDir, name)
-			fullURL = u.String()
 		} else {
-			fullURL = path.Join(base, publicPrefix, publicDir, name)
+			fullURL, err = url2.Parse(app.Config.URL)
+			if err != nil {
+				panic(err)
+			}
+			fullURL.Path = path.Join(fullURL.Path, publicPrefix)
 		}
 
-		return template.URL(fullURL)
+		fullURL.Path = path.Join(fullURL.Path, name)
+
+		return template.URL(fullURL.String())
 	}
 }
