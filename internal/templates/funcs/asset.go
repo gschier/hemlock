@@ -9,7 +9,7 @@ import (
 )
 
 func asset(app *hemlock.Application) interface{} {
-	return func(name string, bust bool) template.URL {
+	return func(name string) template.URL {
 		var (
 			err     error
 			fullURL *url2.URL
@@ -36,7 +36,7 @@ func asset(app *hemlock.Application) interface{} {
 
 		fullURL.Path = path.Join(fullURL.Path, name)
 
-		if bust && app.IsProd() {
+		if app.IsProd() {
 			fullURL.Query().Set("version", hemlock.CacheBustKey)
 		}
 
