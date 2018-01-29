@@ -1,7 +1,6 @@
 package funcs
 
 import (
-	"fmt"
 	"github.com/gschier/hemlock"
 	"html/template"
 	url2 "net/url"
@@ -43,7 +42,6 @@ func asset(app *hemlock.Application) interface{} {
 			fullURL.RawQuery = q.Encode()
 		}
 
-		fmt.Printf("HELLO: %#v\n", fullURL.Query())
 		return template.URL(fullURL.String())
 	}
 }
