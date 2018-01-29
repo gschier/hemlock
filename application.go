@@ -137,6 +137,10 @@ func (a *Application) IsDev() bool {
 	return strings.ToLower(a.Config.Env) != "production"
 }
 
+func (a *Application) IsProd() bool {
+	return !a.IsDev()
+}
+
 func (a *Application) Env(name string) string {
 	return Env(name)
 }
