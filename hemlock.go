@@ -34,6 +34,12 @@ func EnvOrPanic(name string) string {
 	return value
 }
 
+// Version returns the semver version number of the Hemlock framework
+func Version() string {
+	// TODO: Implement version tracking
+	return "0.0.1"
+}
+
 func init() {
 	CacheBustKey = fmt.Sprintf("%d", time.Now().Unix())
 }

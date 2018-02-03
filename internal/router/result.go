@@ -57,7 +57,7 @@ func (r *Result) Error(err error) interfaces.Result {
 	}
 
 	r.defaultStatus(http.StatusInternalServerError)
-	r.setContentType("text/plain")
+	r.w.Header().Set("Content-Type", "text/plain")
 
 	// Log error if there was one
 	// TODO: Make this better
@@ -154,16 +154,7 @@ func (r *Result) flushHeaders() {
 		r.status = http.StatusOK
 	}
 
-	// Set any headers that need to be
-	if !r.hasContentType() {
-		if strings.HasSuffix(r.r.URL.Path, ".js") {
-			r.defaultContentType("application/javascript")
-		} else if strings.HasSuffix(r.r.URL.Path, ".css") {
-			r.defaultContentType("text/css")
-		} else {
-			r.defaultContentType("text/html")
-		}
-	}
+	r.applyDefaultHeaders()
 
 	// Write the status code and headers
 	r.w.WriteHeader(r.status)
@@ -179,16 +170,13 @@ func (r *Result) defaultStatus(code int) {
 	}
 }
 
-func (r *Result) setContentType(contentType string) {
-	r.w.Header().Set("Content-Type", contentType)
-}
-
-func (r *Result) defaultContentType(contentType string) {
-	if !r.hasContentType() {
-		r.setContentType(contentType)
+func (r *Result) defaultHeader(name, value string) {
+	if r.w.Header().Get(name) == "" {
+		r.w.Header().Set(name, value)
 	}
 }
 
-func (r *Result) hasContentType() bool {
-	return r.w.Header().Get("Content-Type") != ""
+func (r *Result) applyDefaultHeaders() {
+	r.defaultHeader("Server", "Hemlock/"+hemlock.Version())
+	r.defaultHeader("Content-Type", mime.TypeByExtension(filepath.Ext(r.r.URL.Path)))
 }
