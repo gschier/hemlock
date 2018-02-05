@@ -20,17 +20,6 @@ type Application struct {
 }
 
 func NewApplication(config *Config, providers []Provider) *Application {
-	// Validate the config
-	func() {
-		if !strings.HasPrefix(config.PublicPrefix, "/") {
-			panic(`PublicPrefix should start with "/"`)
-		}
-
-		if config.PublicPrefix == "/" {
-			panic("PublicPrefix cannot be root")
-		}
-	}()
-
 	// Create the app
 	app := &Application{
 		Config: config,
