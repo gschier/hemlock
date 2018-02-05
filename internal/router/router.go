@@ -78,22 +78,26 @@ func NewRouter(app *hemlock.Application) *Router {
 	})
 
 	// Add static handler
-	router.Prefix(router.app.Config.PublicPrefix).Methods(http.MethodGet).Callback(
-		func(req interfaces.Request, res interfaces.Response) interfaces.Result {
-			p := req.Path()
-			p = strings.TrimPrefix(p, router.app.Config.PublicPrefix)
-			cwd, _ := os.Getwd()
-			fullPath := filepath.Join(cwd, router.app.Config.PublicDirectory, p)
-			s, err := os.Stat(fullPath)
-			if err != nil || s.IsDir() {
-				return res.Status(404).Data("Resource not found")
-			}
-			f, err := os.Open(fullPath)
+	u, err := url.Parse(app.Config.PublicPrefix)
+	if err == nil { // Make sure PublicPrefix is a valid path or URL
+		publicPrefixPath := u.Path
+		router.Prefix(publicPrefixPath).Methods(http.MethodGet).Callback(
+			func(req interfaces.Request, res interfaces.Response) interfaces.Result {
+				p := req.Path()
+				p = strings.TrimPrefix(p, publicPrefixPath)
+				cwd, _ := os.Getwd()
+				fullPath := filepath.Join(cwd, app.Config.PublicDirectory, p)
+				s, err := os.Stat(fullPath)
+				if err != nil || s.IsDir() {
+					return res.Status(404).Data("Resource not found")
+				}
+				f, err := os.Open(fullPath)
 
-			ext := filepath.Ext(fullPath)
-			return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
-		},
-	)
+				ext := filepath.Ext(fullPath)
+				return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
+			},
+		)
+	}
 
 	return router
 }
