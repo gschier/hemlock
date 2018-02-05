@@ -29,14 +29,15 @@ func init() {
 
 	cmdSrc := cmd.Arg("dest", "").String()
 	cmdWatch := cmd.Flag("watch", "Restart server when files change").Bool()
+	cmdRace := cmd.Flag("race", "Build with race detector enabled").Bool()
 
 	cmd.Action(func(context *kingpin.ParseContext) error {
 		if *cmdWatch {
-			go buildAndRunApp(*cmdSrc)
-			watchApp(*cmdSrc)
+			go buildAndRunApp(*cmdSrc, *cmdRace)
+			watchApp(*cmdSrc, *cmdRace)
 		} else {
 			// Block until it finishes
-			buildAndRunApp(*cmdSrc)
+			buildAndRunApp(*cmdSrc, *cmdRace)
 			<-doneChannel
 		}
 
@@ -61,9 +62,13 @@ func buildName() string {
 	return filepath.Base(dir)
 }
 
-func buildApp(srcDir string) error {
+func buildApp(srcDir string, race bool) error {
 	fmt.Printf("[hemlock] Building %v...\n", filepath.Base(buildPath()))
-	cmd := exec.Command("go", "build", "-o", buildPath(), ".")
+	cmd := exec.Command("go", "build")
+	if race {
+		cmd.Args = append(cmd.Args, "-race")
+	}
+	cmd.Args = append(cmd.Args, "-o", buildPath(), ".")
 	cmd.Dir = srcDir
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -159,7 +164,7 @@ func watchFolder(path string) {
 	//fmt.Printf("Watching %v...\n", path)
 }
 
-func watchApp(srcDir string) {
+func watchApp(srcDir string, race bool) {
 	watchableDirs := make([]string, 0)
 	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
@@ -207,7 +212,7 @@ func watchApp(srcDir string) {
 			needsToBuild = true
 		default:
 			if needsToBuild && time.Now().After(nextBuild) {
-				buildAndRunApp(srcDir)
+				buildAndRunApp(srcDir, race)
 				needsToBuild = false
 				nextBuild = time.Now().Add(time.Second * 2)
 			}
@@ -217,9 +222,9 @@ func watchApp(srcDir string) {
 	}
 }
 
-func buildAndRunApp(srcDir string) {
+func buildAndRunApp(srcDir string, race bool) {
 	// Build before we kill the existing one
-	err := buildApp(srcDir)
+	err := buildApp(srcDir, race)
 	if err != nil {
 		fmt.Printf("[hemlock] Build error: %v\n", err)
 		return

@@ -120,13 +120,14 @@ func (r *Route) Group(fn func(router interfaces.Router)) {
 
 func (r *Route) wrap(callback interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r2 *http.Request) {
+		newApp := hemlock.CloneApplication(r.router.app)
+
 		var renderer templates.Renderer
-		r.router.app.Resolve(&renderer)
+		newApp.Resolve(&renderer)
 
 		req := newRequest(r2)
 		res := newResponse(w, req, &renderer, r.router)
 
-		newApp := hemlock.CloneApplication(r.router.app)
 		newApp.Instance(req)
 		newApp.Instance(res)
 

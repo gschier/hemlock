@@ -3,10 +3,12 @@ package container
 import (
 	"log"
 	"reflect"
+	"sync"
 )
 
 type Container struct {
 	registered             []*serviceWrapper
+	registeredMutex        sync.Mutex
 	serviceConstructorArgs []interface{}
 }
 
@@ -19,7 +21,11 @@ func New(serviceConstructorArgs []interface{}) *Container {
 
 func Clone(c *Container, serviceConstructorArgs []interface{}) *Container {
 	newContainer := New(serviceConstructorArgs)
+
+	c.registeredMutex.Lock()
+	defer c.registeredMutex.Unlock()
 	copy(newContainer.registered, c.registered)
+
 	return newContainer
 }
 
@@ -120,6 +126,8 @@ func (c *Container) findServiceWrapperByInterface(iType reflect.Type) *serviceWr
 
 	var matchedSW *serviceWrapper
 	leastMethods := -1
+	c.registeredMutex.Lock()
+	defer c.registeredMutex.Unlock()
 	for _, sw := range c.registered {
 		//fmt.Printf("Checking %v =? %v\n", iType, sw.instanceType)
 		numMethods := sw.instanceType.NumMethod()
@@ -148,6 +156,8 @@ func (c *Container) findServiceWrapperByPtr(ptrType reflect.Type) *serviceWrappe
 		panic("Argument type must be an pointer")
 	}
 
+	c.registeredMutex.Lock()
+	defer c.registeredMutex.Unlock()
 	for _, sw := range c.registered {
 		//fmt.Printf("Checking Ptr %v =? %v\n", ptrType, sw.instanceType)
 		// TODO: Find best match interface
@@ -165,6 +175,8 @@ func (c *Container) findServiceWrapperByPtr(ptrType reflect.Type) *serviceWrappe
 }
 
 func (c *Container) FindServiceWrapperByValue(valueType reflect.Type) *serviceWrapper {
+	c.registeredMutex.Lock()
+	defer c.registeredMutex.Unlock()
 	for _, sw := range c.registered {
 		if sw.instanceType.AssignableTo(valueType) {
 			return sw
