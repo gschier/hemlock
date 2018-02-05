@@ -7,6 +7,7 @@ import (
 	"github.com/gschier/hemlock/internal/container"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -20,6 +21,19 @@ type Application struct {
 }
 
 func NewApplication(config *Config, providers []Provider) *Application {
+	// Validate the config
+	func() {
+		u, err := url.Parse(config.PublicPrefix)
+		if err != nil {
+			panic("PublicPrefix is invalid")
+		}
+
+		// Ensure public prefix starts with "/" if it's not a full URL`
+		if !u.IsAbs() && !strings.HasPrefix(config.PublicPrefix, "/") {
+			config.PublicPrefix = "/" + config.PublicPrefix
+		}
+	}()
+
 	// Create the app
 	app := &Application{
 		Config: config,
