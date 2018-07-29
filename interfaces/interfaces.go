@@ -43,6 +43,9 @@ type Request interface {
 	// Input grabs input from the query string by name
 	QueryInt(name string) int
 
+	// Post grabs input from the post data by name
+	Post(name string) string
+
 	// Cookie grabs input from cookies by name
 	Cookie(name string) string
 
