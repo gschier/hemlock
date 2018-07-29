@@ -26,50 +26,61 @@ type Router struct {
 	mux          *mux.Router
 	middlewares  []*middlewareContainer
 	didSetupURLs bool
+	root         bool
 }
 
 func NewRouter(app *hemlock.Application) *Router {
-	router := &Router{app: app, mux: mux.NewRouter()}
+	return NewRouterWithMux(app, mux.NewRouter(), true)
+}
+
+func NewRouterWithMux(app *hemlock.Application, m *mux.Router, isRoot bool) *Router {
+	router := &Router{app: app, mux: m}
 
 	// Redirect slashes
 	router.mux.StrictSlash(true)
 
 	// This needs to be first
-	if !app.IsDev() {
-		router.UseG(handlers.RecoveryHandler())
-	}
+	if isRoot {
+		if !app.IsDev() {
+			router.UseG(handlers.RecoveryHandler())
+			router.UseG(handlers.CompressHandler)
+		}
 
-	router.UseG(handlers.CompressHandler)
+		// Add logging middleware
+		if app.IsDev() {
+			router.UseG(func(next http.Handler) http.Handler {
+				return handlers.LoggingHandler(os.Stdout, next)
+			})
+		}
 
-	// Add logging middleware
-	if app.IsDev() {
-		router.UseG(func(next http.Handler) http.Handler {
-			return handlers.LoggingHandler(os.Stdout, next)
-		})
-	}
-
-	if !app.IsDev() {
-		// Add caching middleware
-		router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
-			ext := filepath.Ext(req.Path())
-			if ext == ".css" || ext == ".js" {
-				res.Header("Cache-Control", "public, max-age=7200")
-			}
-			return next(req, res)
-		})
-		// Add HTTP redirect middleware
-		router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
-			if req.Header("X-Forwarded-Proto") == "http" {
-				newUrl := "https://" + req.Host() + req.URL().String()
-				return res.Redirect(newUrl, http.StatusFound)
-			} else {
+		if !app.IsDev() {
+			// Add caching middleware
+			router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+				ext := filepath.Ext(req.Path())
+				if ext == ".css" || ext == ".js" {
+					res.Header("Cache-Control", "public, max-age=7200")
+				}
 				return next(req, res)
-			}
-		})
+			})
+			// Add HTTP redirect middleware
+			router.Use(func(req interfaces.Request, res interfaces.Response, next interfaces.Next) interfaces.Result {
+				if req.Header("X-Forwarded-Proto") == "http" {
+					newUrl := "https://" + req.Host() + req.URL().String()
+					return res.Redirect(newUrl, http.StatusFound)
+				} else {
+					return next(req, res)
+				}
+			})
+		}
 	}
 
 	// Add main handler to call middleware
 	router.mux.Use(func(next http.Handler) http.Handler {
+		// Not sure why this is needed but `next` is `nil` when executing middleware on a 404
+		if next == nil {
+			return nil
+		}
+
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			router.nextCombinedMiddleware(0, w, r, func(w2 http.ResponseWriter, r2 *http.Request) {
 				next.ServeHTTP(w2, r2)
@@ -77,26 +88,28 @@ func NewRouter(app *hemlock.Application) *Router {
 		})
 	})
 
-	// Add static handler
-	u, err := url.Parse(app.Config.PublicPrefix)
-	if err == nil { // Make sure PublicPrefix is a valid path or URL
-		publicPrefixPath := u.Path
-		router.Prefix(publicPrefixPath).Methods(http.MethodGet).Callback(
-			func(req interfaces.Request, res interfaces.Response) interfaces.Result {
-				p := req.Path()
-				p = strings.TrimPrefix(p, publicPrefixPath)
-				cwd, _ := os.Getwd()
-				fullPath := filepath.Join(cwd, app.Config.PublicDirectory, p)
-				s, err := os.Stat(fullPath)
-				if err != nil || s.IsDir() {
-					return res.Status(404).Data("Resource not found")
-				}
-				f, err := os.Open(fullPath)
+	if (isRoot) {
+		// Add static handler
+		u, err := url.Parse(app.Config.PublicPrefix)
+		if err == nil { // Make sure PublicPrefix is a valid path or URL
+			publicPrefixPath := u.Path
+			router.Prefix(publicPrefixPath).Methods(http.MethodGet).Callback(
+				func(req interfaces.Request, res interfaces.Response) interfaces.Result {
+					p := req.Path()
+					p = strings.TrimPrefix(p, publicPrefixPath)
+					cwd, _ := os.Getwd()
+					fullPath := filepath.Join(cwd, app.Config.PublicDirectory, p)
+					s, err := os.Stat(fullPath)
+					if err != nil || s.IsDir() {
+						return res.Status(404).Data("Resource not found")
+					}
+					f, err := os.Open(fullPath)
 
-				ext := filepath.Ext(fullPath)
-				return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
-			},
-		)
+					ext := filepath.Ext(fullPath)
+					return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
+				},
+			)
+		}
 	}
 
 	return router
