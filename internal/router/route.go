@@ -23,7 +23,7 @@ func (r *Route) Redirect(uri, to string, code int) interfaces.Route {
 	})
 }
 
-func (r *Route) View(uri, view, layout string, data interface{}) interfaces.Route {
+func (r *Route) View(uri, view, layout string, data map[string]interface{}) interfaces.Route {
 	return r.Get(uri, func(res interfaces.Response) interfaces.Result {
 		return res.View(view, layout, data)
 	})
