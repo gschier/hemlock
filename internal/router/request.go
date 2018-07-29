@@ -46,16 +46,20 @@ func (req *Request) Query(name string) string {
 	return req.R.URL.Query().Get(name)
 }
 
-func (req *Request) WithContext(ctx context.Context) interfaces.Request {
-	return newRequest(req.R.WithContext(ctx))
-}
-
 func (req *Request) QueryInt(name string) int {
 	value, err := strconv.Atoi(req.Query(name))
 	if err != nil {
 		return 0
 	}
 	return value
+}
+
+func (req *Request) WithContext(ctx context.Context) interfaces.Request {
+	return newRequest(req.R.WithContext(ctx))
+}
+
+func (req *Request) Post(name string) string {
+	return req.R.Form.Get(name)
 }
 
 func (req *Request) Cookie(name string) string {
