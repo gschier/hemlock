@@ -72,7 +72,7 @@ func (r *Result) Sprintf(format string, a ...interface{}) interfaces.Result {
 	return r.Data(fmt.Sprintf(format, a...))
 }
 
-func (r *Result) View(name, layout string, data interface{}) interfaces.Result {
+func (r *Result) View(name, layout string, data map[string]interface{}) interfaces.Result {
 	// Set content type based on extension of template
 	ext := filepath.Ext(name)
 	r.w.Header().Set("Content-Type", mime.TypeByExtension(ext))
@@ -120,7 +120,7 @@ func (r *Result) Data(data interface{}) interfaces.Result {
 	return r
 }
 
-func (r *Result) getRenderContext(data interface{}) interface{} {
+func (r *Result) getRenderContext(data map[string]interface{}) interface{} {
 	var config hemlock.Config
 	var router interfaces.Router
 	r.router.app.Resolve(&config, &router)
@@ -154,6 +154,7 @@ func (r *Result) flushHeaders() {
 		r.status = http.StatusOK
 	}
 
+	// Apply default headers
 	r.applyDefaultHeaders()
 
 	// Write the status code and headers
