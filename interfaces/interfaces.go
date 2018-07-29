@@ -96,7 +96,7 @@ type Result interface {
 	Data(data interface{}) Result
 	Error(error) Result
 	Sprintf(format string, a ...interface{}) Result
-	View(name, layout string, data interface{}) Result
+	View(name, layout string, data map[string]interface{}) Result
 	Redirect(uri string, code int) Result
 	RedirectRoute(name string, params map[string]string, code int) Result
 }
@@ -119,7 +119,7 @@ type Router interface {
 	Redirect(uri, to string, code int) Route
 
 	// View creates a route
-	View(uri, view, layout string, data interface{}) Route
+	View(uri, view, layout string, data map[string]interface{}) Route
 
 	// Prefix resolves new Route instance for the provided URI
 	Prefix(uri string) Route

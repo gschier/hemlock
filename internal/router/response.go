@@ -50,7 +50,7 @@ func (res *Response) Header(name, value string) interfaces.Response {
 	return res
 }
 
-func (res *Response) View(name, layout string, data interface{}) interfaces.Result {
+func (res *Response) View(name, layout string, data map[string]interface{}) interfaces.Result {
 	return res.newResult().View(name, layout, data)
 }
 

@@ -106,7 +106,7 @@ func (router *Router) Redirect(uri, to string, code int) interfaces.Route {
 	return router.newRoute().Redirect(uri, to, code)
 }
 
-func (router *Router) View(uri, view, layout string, data interface{}) interfaces.Route {
+func (router *Router) View(uri, view, layout string, data map[string]interface{}) interfaces.Route {
 	return router.newRoute().View(uri, view, layout, data)
 }
 
