@@ -80,7 +80,7 @@ type Response interface {
 	Sprintf(format string, a ...interface{}) Result
 
 	// View renders a view for the response with a provided layout and data
-	View(name, layout string, data interface{}) Result
+	View(name, layout string, data map[string]interface{}) Result
 
 	// Redirect redirects the client to a URL
 	Redirect(uri string, code int) Result
