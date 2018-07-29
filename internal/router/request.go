@@ -59,6 +59,7 @@ func (req *Request) WithContext(ctx context.Context) interfaces.Request {
 }
 
 func (req *Request) Post(name string) string {
+	req.R.ParseForm()
 	return req.R.Form.Get(name)
 }
 
