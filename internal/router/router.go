@@ -105,7 +105,10 @@ func NewRouterWithMux(app *hemlock.Application, m *mux.Router, isRoot bool) *Rou
 				f, err := os.Open(fullPath)
 
 				ext := filepath.Ext(fullPath)
-				return res.Header("Content-Type", mime.TypeByExtension(ext)).Data(f)
+				return res.
+					Header("Access-Control-Allow-Origin", "*").
+					Header("Content-Type", mime.TypeByExtension(ext)).
+					Data(f)
 			},
 		)
 	}

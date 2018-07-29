@@ -27,6 +27,9 @@ type Request interface {
 	// Path returns the path of the current URL
 	Path() string
 
+	// Method returns the HTTP method
+	Method() string
+
 	// URL returns the raw URL
 	URL() *url.URL
 

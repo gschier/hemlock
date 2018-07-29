@@ -34,6 +34,10 @@ func (req *Request) Path() string {
 	return req.R.URL.Path
 }
 
+func (req *Request) Method() string {
+	return req.R.Method
+}
+
 func (req *Request) RouteName() string {
 	r := mux.CurrentRoute(req.R)
 	if r == nil {
