@@ -11,6 +11,7 @@ type Config struct {
 	PublicDirectory    string
 	PublicPrefix       string
 	Database           *DatabaseConfig
+	Sessions           *SessionConfig
 	HTTP               *HTTPConfig
 	Extra              []interface{}
 }
@@ -40,4 +41,11 @@ type DatabaseConnectionConfig struct {
 	Prefix    string
 	Schema    string
 	SSLMode   bool
+}
+
+// SessionConfig contains database settings.
+type SessionConfig struct {
+	Default     string // 'postgres'
+	Migrations  string // 'migrations'
+	Connections []DatabaseConnectionConfig
 }
