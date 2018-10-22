@@ -249,7 +249,7 @@ func (router *Router) URL(p string) string {
 }
 
 func (router *Router) fork() *Router {
-	return &Router{mux: router.mux.NewRoute().Subrouter(), app: router.app}
+	return NewRouterWithMux(router.app, router.mux.NewRoute().Subrouter(), false)
 }
 
 func (router *Router) newRoute() *Route {
