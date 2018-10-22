@@ -115,7 +115,7 @@ func (r *Route) WithG(m ...func(http.Handler) http.Handler) interfaces.Route {
 }
 
 func (r *Route) Group(fn func(router interfaces.Router)) {
-	fn(r.router)
+	fn(r.router.fork())
 }
 
 func (r *Route) wrap(callback interface{}) http.HandlerFunc {
